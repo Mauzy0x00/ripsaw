@@ -62,17 +62,27 @@ fn main() -> Result<()> {
         
         // Open passed wordlist file
         // Open the path in read-only mode, returns `io::Result<File>`
-        let mut file = match File::open(&wordlist) {
+        let file = match File::open(&wordlist) {
             Err(why) => panic!("couldn't open {}: {}", wordlist.display(), why),
             Ok(file) => file,
         };
 
-        // Create a readering buffer to the file pointer
-        let mut reader = BufReader::new(file);
+    // Iterating over each line is not performant. 
+    // Also can't read whole file into a String if the file is too big.
+    // Can check available RAM and size_of file to make a decision on which to do. 
+    // Perhaps try reading in parts of the file to memory then iterate over that 
+    // before moving to the next portion of the file. Do this in chunks until EOF
 
-        for line in reader. lines() {
-            if cyphertext == hash_algorithm(&wordlist) {
+        // Create a reading buffer to the file pointer
+        let reader = BufReader::new(file);
+        
+        for line in reader.lines() {
+            let line = 
+            let hashed_word = hash_algorithm(&line.unwrap());
 
+            if cyphertext == hashed_word {
+                println!("Match Found!\nPassword: {}", &line.clone().unwrap());
+                break;
             }
         }
     } else {
