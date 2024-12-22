@@ -8,7 +8,7 @@ use jh::{Jh224, Jh256, Jh384, Jh512};
 // use k12::KangarooTwelve; -- missing need input integer 
 use md2::Md2;
 use md4::Md4;
-// use md5::{Md5, Digest}; -- missing; unresolved import @ root ???
+use md5::compute;
 use ripemd::{Ripemd160, Ripemd256, Ripemd320};
 use sha1::Sha1;
 // use sha1_checked::Sha1; -- missing
@@ -27,10 +27,16 @@ use std::collections::HashMap;
 pub fn get_algorithm(algorithm: &str) -> Option<fn(&str) -> String> {
     let mut algorithms: HashMap<&str, fn(&str) -> String> = HashMap::new();
 
+    algorithms.insert("ascon", hash_ascon);
+    algorithms.insert("belt", hash_belt);
+    algorithms.insert("fsb160", hash_fsb160);
+    algorithms.insert("fsb224", hash_fsb224);
+    algorithms.insert("fsb256", hash_fsb256);
     algorithms.insert("sha256", hash_sha256);
     algorithms.insert("sha512", hash_sha512);
     algorithms.insert("md2", hash_md2);
     algorithms.insert("md4", hash_md4);
+    algorithms.insert("md5", hash_md5);
     algorithms.insert("ripemd160", hash_ripemd160);
     algorithms.insert("ripemd256", hash_ripemd256);
     algorithms.insert("ripemd320", hash_ripemd320);
@@ -158,11 +164,10 @@ pub fn hash_md4(input: &str) -> String {
     format!("{:x}", hasher.finalize())
 }
 
-// fn hash_md5(input: &str) -> String {
-//     let mut hasher = Md5::new();
-//     hasher.update(input.as_bytes());
-//     format!("{:x}", hasher.finalize())
-// }
+pub fn hash_md5(input: &str) -> String {
+    let hashed = compute(input);
+    format!("{:x}", hashed)
+}
 
 pub fn hash_ripemd160(input: &str) -> String {
     let mut hasher = Ripemd160::new();
