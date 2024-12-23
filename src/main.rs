@@ -9,15 +9,12 @@
 
 
 // IO
-use std::io::prelude::*;
-use std::io::BufReader;
+use std::io::{self, BufRead, BufReader, Seek, SeekFrom};
 use std::fs::File;
 
-// System info
-use std::path::PathBuf;
-
-// Paralization 
+// Parallelization 
 use std::thread;
+use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 // CLI
@@ -57,7 +54,6 @@ fn main() -> Result<()> {
     let cyphertext = std::fs::read_to_string(&args.cyphertext_path).with_context(|| format!("File is unreadable! File: `{}`", args.cyphertext_path.display()))?;
     let wordlist_path = args.wordlist_path;
     let thread_count = args.thread_count;
-    // ^ TODO: Don't read entire file into memory; Use something like 'Bufreader' instead of read_to_string()
     
     let algorithm = args.algorithm;
 
@@ -71,37 +67,25 @@ fn main() -> Result<()> {
         };
 
         // get the size of the input wordlist
-        let file_size = wordlist_path.metadata().unwrap().len();
+        let file_size:u64 = wordlist_file.metadata()?.len();
         println!("File size: {file_size}");
-
-
         
         // If the wordlist is larger than 2GB
-        if file_size <= 2000000000 { 
+        if file_size >= 2_000_000_000 { 
 
-            crack_big_wordlist(cyphertext, &wordlist_file, hash_algorithm);
+            crack_big_wordlist(&cyphertext, wordlist_file, file_size, thread_count, hash_algorithm);
 
         } else {
-
-            // Read wordlist into a vec (This goes in the if/else checking filesize dumby)
-            // Create a reading buffer to the file pointer
-            //let reader = BufReader::new(wordlist_file);
-            let string_wordlist = std::fs::read_to_string(wordlist_path).with_context(|| format!("File is unreadable! File: `{}`", args.cyphertext_path.display()))?;
-            for line in string_wordlist.lines() {
-                let line = match line {
-                    Err(why) => panic!("Could not read the next line of the wordlist String...\n {}", why),
-                    Ok(line) => line,
-                };
-
-                let hashed_word = hash_algorithm(&line);
-
-                if cyphertext == hashed_word {
-                    println!("Match Found!\nPassword: {}", &line.clone());
-                    break;
+            // Typical file size (< 2GB)
+            let wordlist_content = BufReader::new(wordlist_file)
+                                .lines()
+                                .collect::<Result<Vec<_>, io::Error>>()?;
+            for line in wordlist_content {
+                if let Some(found) = process_line(&line, &cyphertext, hash_algorithm) {
+                    println!("Match Found!\nPassword: {}", found);
+                    return Ok(());
                 }
             }
-
-
         }
         
     } else {
@@ -114,28 +98,63 @@ fn main() -> Result<()> {
 
 // Function to crack a hashed password given a large wordlist as the input (Larger than 2GB)
 // Optomize file parsing with its larger size in mind. Cannot just read the entire file into memory (unless user specifies otherwise)
-fn crack_big_wordlist(cyphertext:String, wordlist_file:&File, hash_algorithm:fn(&str)->String) { // -> vec?  {
+fn crack_big_wordlist(cyphertext:&str, wordlist_file:File, file_size:u64, thread_count: u8, hash_algorithm:fn(&str)->String) -> Result<()>{
 
-        // Create a reading buffer to the file pointer
-        let reader = BufReader::new(wordlist_file);
+    let partition_size = file_size / thread_count as u64;
 
-        // Create threads for parseing file and cracking passwords! meoow
-        thread::spawn(move || {
+    println!("File size: {file_size}");
+    println!("Partition size per thread: {partition_size}");
+    
+    let wordlist_file_mutex = Arc::new(Mutex::new(wordlist_file)); // Shared file handle for threads
 
-        });
+    let mut handles = vec![];
 
-        for line in reader.lines() {
-            let line = match line {
-                Err(why) => panic!("Couldn't read the next line in the file! Why: {}", why), 
-                Ok(line) => line,
+    for thread_id in 0..thread_count {
+        let file = Arc::clone(&wordlist_file_mutex);
+        let cyphertext = cyphertext.to_string();
+
+        let handle = thread::spawn(move || {
+            let start = thread_id as u64 * partition_size;
+            let end = if thread_id == thread_count - 1 {
+                file_size
+            } else {
+                (thread_id as u64 + 1) * partition_size
             };
 
-            let hashed_word = hash_algorithm(&line);
+            let mut file = file.lock().unwrap();
+            file.seek(SeekFrom::Start(start)).expect("Failed to seek to partition start");
 
-            if cyphertext == hashed_word {
-                println!("Match Found!\nPassword: {}", &line.clone());
-                break;
+            let reader = BufReader::new(&*file);    // The '*' "unwraps" the file pointer from the mutex (Points to the value of the file pointer, not the mutex)
+            for line in reader.lines() {
+                let line = line.expect("Failed to read line");
+                if file.seek(SeekFrom::Current(0)).unwrap() >= end {
+                    break;
+                }
+                let hashed_word = hash_algorithm(&line);
+                if hashed_word == cyphertext {
+                    println!("Match found by thread {thread_id}!\nPassword: {line}");
+                    return;
+                }
             }
-        }
+        });
+
+        handles.push(handle);
+    }
+
+    for handle in handles {
+        handle.join().expect("Thread panicked");
+    }
+
+    Ok(())
 
 } // end get_file_size
+
+// Helper function to process a line
+fn process_line(line: &str, cyphertext: &str, hash_algorithm: fn(&str) -> String) -> Option<String> {
+    let hashed_word = hash_algorithm(line);
+    if cyphertext == hashed_word {
+        Some(line.to_string())
+    } else {
+        None
+    }
+} // end process_line
