@@ -15,9 +15,8 @@ use std::fs::File;
 
 // System info
 
-// Paralization 
+// Paralization
 use std::thread::{self};
-use std::sync::mpsc;    // mpsc stands for Multiple Producer Single Consumer
 use std::sync::{Arc, Mutex};
 use std::thread::JoinHandle;
 use std::time::Duration;
@@ -32,7 +31,7 @@ mod hashing;
 use hashing::*;
 
 
-/// Struct to parse Command Line Interface arguments 
+/// Struct to parse Command Line Interface arguments
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
 struct Args {
@@ -60,11 +59,11 @@ fn main() -> Result<()> {
     let wordlist_path = args.wordlist_path;
     let thread_count = args.thread_count;
     // ^ TODO: Don't read entire file into memory; Use something like 'Bufreader' instead of read_to_string()
-    
+
     let algorithm = args.algorithm;
 
     if let Some(hash_algorithm) = get_algorithm(&algorithm) {
-        
+
         // Open passed wordlist file
         // Open the path in read-only mode, returns `io::Result<File>`
         let wordlist_file = match File::open(&wordlist_path) {
@@ -77,7 +76,7 @@ fn main() -> Result<()> {
         println!("File size: {file_size}");
 
         // If the wordlist is larger than 2GB
-        if file_size <= 2_000_000_000 { 
+        if file_size <= 2_000_000_000 {
             let cracked = crack_big_wordlist(cyphertext, wordlist_file, file_size, thread_count, hash_algorithm);
 
             if cracked {
@@ -87,7 +86,6 @@ fn main() -> Result<()> {
             }
 
         } else {
-
             // Read wordlist into a vec (This goes in the if/else checking filesize dumby)
             // Create a reading buffer to the file pointer
             //let reader = BufReader::new(wordlist_file);
@@ -103,8 +101,6 @@ fn main() -> Result<()> {
                 }
             }
         }
-
-
 
     } else {
         eprintln!("Sorry! Passed hashing algorithm ({algorithm}) has not been implemented")
@@ -122,27 +118,26 @@ fn main() -> Result<()> {
     //      Each thread uses a mutex to read a portion of its partition into memory.
     //          The sum of data read into memory from each thread should not exceed 2GB.
     // Create # of threads specified by user for cracking the password list
-fn crack_big_wordlist(cyphertext:String, wordlist_file:File, file_size:u64, thread_count:u8, hash_algorithm:fn(&str)->String) -> bool { 
+fn crack_big_wordlist(cyphertext:String, wordlist_file:File, file_size:u64, thread_count:u8, hash_algorithm:fn(&str)->String) -> bool {
 
-    let mut cracked = false;
     let partition_size = file_size / thread_count as u64; // Get the  size of each thread partition
 
     println!("File size: {file_size}");
     println!("Partition size per thread: {partition_size}");
     println!("Building threads...");
-    let mutex_wordlist_file = Arc::new(Mutex::new(wordlist_file)); // Wrap the Mutex in Arc for mutual excusion of the file and an atomic reference across threads
 
-    let mut handles: Vec<JoinHandle<()>> = vec![]; // A vector of thread handles
+    let cracked:bool = false;
+    let mutex_cracked = Arc::new(Mutex::new(cracked)); // Mutex wrap the cracked bool so we can broadcast to each thread if another thread has found a match
+
+    let mutex_wordlist_file = Arc::new(Mutex::new(wordlist_file)); // Wrap the Mutex in Arc for mutual excusion of the file and an atomic reference across threads
     
-    // Set up a communication channel for threads. If one thread finds the password the others should stop
-    let (transmitter, receiver) = mpsc::channel();
+    let mut handles: Vec<JoinHandle<()>> = vec![]; // A vector of thread handles
 
     for thread_id in 0..thread_count {
-        let wordlist_file = Arc::clone(&mutex_wordlist_file); // Create a clone of the mutex_worldist_file: Arc<Mutex><File>> for each thread
-        let cyphertext = cyphertext.to_string(); // Allocate the cyphertext data in scope for each thread
-
-        let transmitter_clone= transmitter.clone(); // Transmitter to inform other threads of successful hash match found. 
-        let receiver_clone = receiver.clone();
+        let wordlist_file = Arc::clone(&mutex_wordlist_file);   // Create a clone of the mutex_worldist_file: Arc<Mutex><File>> for each thread
+        let cracked_bool = Arc::clone(&mutex_cracked);          // Create a clone of mutex_cracked for each thread
+        
+        let cyphertext = cyphertext.to_string();                               // Allocate the cyphertext data in scope for each thread
 
         let handle = thread::spawn(move || {
             // Calculate current thread's assigned memory space (assigned partition)
@@ -154,12 +149,11 @@ fn crack_big_wordlist(cyphertext:String, wordlist_file:File, file_size:u64, thre
                             } else {
                                 (thread_id as u64 + 1) * partition_size
                             };
-            
-        // Request and lock the file 
+
+        // Request and lock the file
             println!("Thread {thread_id} is now reading from wordlist");
             let mut wordlist_file = wordlist_file.lock().unwrap();
 
-            
             // Count how many lines are in this current partition
             let line_count:usize = match count_lines_in_partition(&mut wordlist_file, start, end) {
                 Err(why) => panic!("Error counting lines on thread {} because {}", thread_id, why),
@@ -167,17 +161,17 @@ fn crack_big_wordlist(cyphertext:String, wordlist_file:File, file_size:u64, thre
             };
 
             let mut lines:Vec<String> = Vec::with_capacity(line_count);  // Allocate a vector of that size (more efficient to pre-allocate and not allocate each entry)
-            
+
             // Read lines of partition into the vector
             wordlist_file.seek(SeekFrom::Start(start)).expect("Failed to seek to partition start.");    // Move the position of the file read
-            
+
             let mut buf_reader = BufReader::new(&*wordlist_file); // Create a reading buffer to the file pointer
-            
+
             let mut current_position = start;
             while current_position < end {
                 let mut line = String::new();
                 let bytes_read = buf_reader.read_line(&mut line).expect("Failed to read line");
-                
+
                 if bytes_read == 0 {
                     break;
                 }
@@ -190,19 +184,21 @@ fn crack_big_wordlist(cyphertext:String, wordlist_file:File, file_size:u64, thre
                     break;
                 }
             }
-            
+
             println!("Thread {thread_id} finished reading {} lines.", lines.len());
 
         // Unlock the file and iterate over vector
             drop(wordlist_file); // Drop is now the owner and its scope has ended. So Is this not neccessary and the lock is freed after the seek and read?
-            
 
-            if crack_vector(lines, cyphertext, hash_algorithm) {
-                transmitter_clone.send(true).expect("Error sending success message to main thread!"); // If a match is found on this thread send a message to the main thread and stop execution of the other threads 
+
+            if crack_vector(lines, cyphertext, hash_algorithm, &cracked_bool) {
+                println!("cracked!");
+            } else {
+                println!("Not cracked :(");
             }
 
         }); // End of thread
-        
+
         handles.push(handle);   // Push the handles out of the for loop context so they may be joined
     }
 
@@ -212,22 +208,29 @@ fn crack_big_wordlist(cyphertext:String, wordlist_file:File, file_size:u64, thre
         handle.join().expect("Thread Panicked :(");
     }
 
-    cracked
+    cracked // Might have to change this to the mutex wrapped value
 } // end get_file_size
 
 
-/// Iterate over the passed vector and hash the string at that index before checking to see if it matches the 
+/// Iterate over the passed vector and hash the string at that index before checking to see if it matches the
 /// passed cypher text. If it does, return that a match has been found (cracked)
 // Refactored function to increase readability of the large wordlist crack function
-fn crack_vector(lines: Vec<String>, cyphertext:String, hash_algorithm:fn(&str)->String) -> bool {
+fn crack_vector(lines: Vec<String>, cyphertext:String, hash_algorithm:fn(&str)->String, cracked:&Arc<Mutex<bool>>) -> bool {
     let mut match_found = false;
 
     for string in lines.iter() {
+
+        let mut this_cracked = cracked.lock().unwrap(); // Get the value cracked flag from the main thread
         let hashed_word = hash_algorithm(string);
-        
+
         if cyphertext == hashed_word {
             println!("Match Found!\nPassword: {}", string);
             match_found = true;
+            *this_cracked = true;   // Change the global value for cracked 
+            break;
+        
+        // If another thread has cracked the hash then break out of cracking loop
+        } else if *this_cracked {
             break;
         }
     }
