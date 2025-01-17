@@ -15,6 +15,7 @@ use std::fs::File;
 
 // System info
 
+use std::path::PathBuf;
 // Paralization
 use std::thread::{self};
 use std::sync::{Arc, Mutex};
@@ -58,7 +59,6 @@ fn main() -> Result<()> {
     let cyphertext = std::fs::read_to_string(&args.cyphertext_path).with_context(|| format!("File is unreadable! File: `{}`", args.cyphertext_path.display()))?;
     let wordlist_path = args.wordlist_path;
     let thread_count = args.thread_count;
-    // ^ TODO: Don't read entire file into memory; Use something like 'Bufreader' instead of read_to_string()
 
     let algorithm = args.algorithm;
 
@@ -86,20 +86,18 @@ fn main() -> Result<()> {
             }
 
         } else {
-            // Create a reading buffer to the file pointer
-            //let reader = BufReader::new(wordlist_file);
-            let string_wordlist = std::fs::read_to_string(wordlist_path).with_context(|| format!("File is unreadable! File: `{}`", args.cyphertext_path.display()))?;
-            for line in string_wordlist.lines() {
 
-                let hashed_word = hash_algorithm(line);
+            let cracked = match crack_small_wordlist(&cyphertext, &wordlist_path, args.cyphertext_path, hash_algorithm) {
+                Err(why) => panic!("Error cracking wordlist {}: {}", wordlist_path.display(), why),
+                Ok(cracked) => cracked,
+            };
 
-                if cyphertext == hashed_word {
-                    println!("Match Found!\nPassword: {}", &line);
-                    break;
-                }
+            if cracked {
+                println!("Successfully cracked the hash!");
+            } else {
+                println!("Successfully processed the hash but no match was found :(");
             }
         }
-
     } else {
         eprintln!("Sorry! Passed hashing algorithm ({algorithm}) has not been implemented")
     }
@@ -257,3 +255,23 @@ fn count_lines_in_partition(file: &mut File, start: u64, end: u64) -> io::Result
     }
     Ok(line_count)
 } // end count_lines_in_partition
+
+
+/// Function to crack a hash with a wordlist that is smaller than 2GB
+fn crack_small_wordlist(cyphertext:&String, wordlist_path: &PathBuf, cyphertext_path: PathBuf, hash_algorithm:fn(&str)->String) -> Result<bool> {
+    let mut cracked = false;
+    // Create a reading buffer to the file pointer
+    //let reader = BufReader::new(wordlist_file);
+    let string_wordlist = std::fs::read_to_string(wordlist_path).with_context(|| format!("File is unreadable! File: `{}`", cyphertext_path.display()))?;
+    for line in string_wordlist.lines() {
+
+        let hashed_word = hash_algorithm(line);
+
+        if *cyphertext == hashed_word {
+            println!("Match Found!\nPassword: {}", &line);
+            cracked = true;
+            break;
+        }
+    }
+    Ok(cracked)
+}
