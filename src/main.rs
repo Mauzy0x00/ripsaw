@@ -19,7 +19,7 @@ use std::fs::File;
 use std::thread::{self};
 use std::sync::{Arc, Mutex};
 use std::thread::JoinHandle;
-use std::time::Duration;
+// use std::time::Duration;
 
 // CLI
 use anyhow::{Context, Result};
@@ -35,16 +35,16 @@ use hashing::*;
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
 struct Args {
-    #[arg(short = 'c', long, required = true, help = "Path to the encrypted text.")]
+    #[arg(short = 'c', long = "cyphertext", required = true, help = "Path to the encrypted text.")]
     cyphertext_path: std::path::PathBuf,    // Path to cypher text File
 
-    #[arg(short = 'w', long, required = false, help = "meowmeowmeowmeowmeow!")]
+    #[arg(short = 'w', long = "wordlist", required = false, help = "meowmeowmeowmeowmeow!")]
     wordlist_path: std::path::PathBuf,      // Path to the wordlist
 
-    #[arg(short = 'a', long, required = false, help = "Meow (Optional)")]
+    #[arg(short = 'a', long = "algorithm", required = false, help = "Meow (Optional)")]
     algorithm: String,
 
-    #[arg(short = 't', long, required = true, help = "Number of threads used to parse wordlist and crack passwords")]
+    #[arg(short = 't', long = "threads", required = true, help = "Number of threads used to parse wordlist and crack passwords")]
     thread_count: u8,
 }
 
@@ -86,17 +86,15 @@ fn main() -> Result<()> {
             }
 
         } else {
-            // Read wordlist into a vec (This goes in the if/else checking filesize dumby)
             // Create a reading buffer to the file pointer
             //let reader = BufReader::new(wordlist_file);
             let string_wordlist = std::fs::read_to_string(wordlist_path).with_context(|| format!("File is unreadable! File: `{}`", args.cyphertext_path.display()))?;
             for line in string_wordlist.lines() {
 
-
-                let hashed_word = hash_algorithm(&line);
+                let hashed_word = hash_algorithm(line);
 
                 if cyphertext == hashed_word {
-                    println!("Match Found!\nPassword: {}", &line.clone());
+                    println!("Match Found!\nPassword: {}", &line);
                     break;
                 }
             }
@@ -105,7 +103,6 @@ fn main() -> Result<()> {
     } else {
         eprintln!("Sorry! Passed hashing algorithm ({algorithm}) has not been implemented")
     }
-
 
     Ok(())
 } // end main
@@ -126,8 +123,7 @@ fn crack_big_wordlist(cyphertext:String, wordlist_file:File, file_size:u64, thre
     println!("Partition size per thread: {partition_size}");
     println!("Building threads...");
 
-    let cracked:bool = false;
-    let mutex_cracked = Arc::new(Mutex::new(cracked)); // Mutex wrap the cracked bool so we can broadcast to each thread if another thread has found a match
+    let cracked = Arc::new(Mutex::new(false)); // Mutex wrap the cracked bool so we can broadcast to each thread if another thread has found a match
 
     let mutex_wordlist_file = Arc::new(Mutex::new(wordlist_file)); // Wrap the Mutex in Arc for mutual excusion of the file and an atomic reference across threads
     
@@ -135,7 +131,7 @@ fn crack_big_wordlist(cyphertext:String, wordlist_file:File, file_size:u64, thre
 
     for thread_id in 0..thread_count {
         let wordlist_file = Arc::clone(&mutex_wordlist_file);   // Create a clone of the mutex_worldist_file: Arc<Mutex><File>> for each thread
-        let cracked_bool = Arc::clone(&mutex_cracked);          // Create a clone of mutex_cracked for each thread
+        let cracked_bool = Arc::clone(&cracked);          // Create a clone of mutex_cracked for each thread
         
         let cyphertext = cyphertext.to_string();                               // Allocate the cyphertext data in scope for each thread
 
@@ -202,13 +198,14 @@ fn crack_big_wordlist(cyphertext:String, wordlist_file:File, file_size:u64, thre
         handles.push(handle);   // Push the handles out of the for loop context so they may be joined
     }
 
-
     // Iterate ove the vector of handles and join them to conclude cracking
     for handle in handles {
         handle.join().expect("Thread Panicked :(");
     }
 
-    cracked // Might have to change this to the mutex wrapped value
+    let cracked = cracked.lock().unwrap();
+    
+    *cracked
 } // end get_file_size
 
 
