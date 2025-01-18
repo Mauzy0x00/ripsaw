@@ -23,7 +23,7 @@ TODO:
 | \_| \_|\___/\_|    \____/\_| |_/\/  \/| |
 | |                                     | |
 |_|                                     |_|
-
+\/                                      \/                
 */
 
 // IO
@@ -56,10 +56,10 @@ struct Args {
     #[arg(short = 'c', long = "cyphertext", required = true, help = "Path to the encrypted text.")]
     cyphertext_path: std::path::PathBuf,    // Path to cypher text File
 
-    #[arg(short = 'w', long = "wordlist", required = false, help = "meowmeowmeowmeowmeow!")]
+    #[arg(short = 'w', long = "wordlist", required = true, help = "meowmeowmeowmeowmeow!")]
     wordlist_path: std::path::PathBuf,      // Path to the wordlist
 
-    #[arg(short = 'a', long = "algorithm", required = false, help = "Meow (Optional)")]
+    #[arg(short = 'a', long = "algorithm", required = true, help = "Meow (Optional)")]
     algorithm: String,
 
     #[arg(short = 't', long = "threads", required = true, help = "Number of threads used to parse wordlist and crack passwords")]
@@ -74,6 +74,29 @@ fn main() -> Result<()> {
     env_logger::init();
     info!("Starting log...");
     warn!("Ayeee a warning!");
+
+    let banner = r#"
+         _______ ___________  _____  ___  _    _ _ 
+        | | ___ \_   _| ___ \/  ___|/ _ \| |  | | |
+        | | |_/ / | | | |_/ /\ `--./ /_\ \ |  | | |
+        | |    /  | | |  __/  `--. \  _  | |/\| | |
+        | | |\ \ _| |_| |    /\__/ / | | \  /\  / |
+        | \_| \_|\___/\_|    \____/\_| |_/\/  \/| |
+        | |                                     | |
+        |_|                                     |_|
+        \|/                                     \|/ 
+"#;
+    let options = r#"
+    Options:
+    -c, --cyphertext <PATH>    Path to the encrypted text. (required)
+    -w, --wordlist <PATH>      Path to the wordlist. (required)
+    -a, --algorithm <NAME>     Hashing algorithm to use. (required)
+    -t, --threads <NUMBER>     Number of threads used to parse wordlist and crack passwords. (required)
+    -b, --bruteforce           Will bruteforce the hash. Be ready to wait. (optional)
+    "#;
+    
+    println!("{banner}\n{options}");
+
 
     let args = Args::parse();
     let mut cyphertext = std::fs::read_to_string(&args.cyphertext_path).with_context(|| format!("File is unreadable! File: `{}`", args.cyphertext_path.display()))?;
