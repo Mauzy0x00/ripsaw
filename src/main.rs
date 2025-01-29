@@ -113,7 +113,7 @@ fn main() -> Result<()> {
         println!("File size: {file_size}");
 
         // If the wordlist is larger than 2GB
-        if file_size >= 200_000_000 {
+        if file_size >= 20_000_000 {
             let cracked = crack_big_wordlist(cyphertext, wordlist_file, file_size, thread_count, hash_algorithm);
 
             if cracked {
@@ -166,7 +166,7 @@ fn crack_big_wordlist(cyphertext:String, wordlist_file:File, file_size:u64, thre
 
     for thread_id in 0..thread_count {
         let wordlist_file = Arc::clone(&mutex_wordlist_file);   // Create a clone of the mutex_worldist_file: Arc<Mutex><File>> for each thread
-        
+        let cracked = Arc::clone(&cracked);                      // Clone of cracked for each thread
         let cyphertext = cyphertext.to_string();                               // Allocate the cyphertext data in scope for each thread
 
         let handle = thread::spawn(move || {
@@ -237,9 +237,7 @@ fn crack_big_wordlist(cyphertext:String, wordlist_file:File, file_size:u64, thre
         handle.join().expect("Thread Panicked :(");
     }
 
-    let cracked = cracked.load(Ordering::Relaxed);
-    
-    cracked
+    cracked.load(Ordering::Relaxed)
 } // end get_file_size
 
 
@@ -315,3 +313,4 @@ fn crack_small_wordlist(cyphertext:&String, wordlist_path: &PathBuf, cyphertext_
     }
     Ok(cracked)
 }
+
