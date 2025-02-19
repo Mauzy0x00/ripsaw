@@ -62,85 +62,85 @@ pub fn get_algorithm(algorithm: &str) -> Option<fn(&str) -> String> {
     algorithms.get(algorithm).copied()
 }
 
-pub fn hash_ascon(input: &str) -> String {
+fn hash_ascon(input: &str) -> String {
     let mut hasher = AsconHash::new();
     hasher.update(input.as_bytes());
     format!("{:x}", hasher.finalize())
 }
 
-pub fn hash_belt(input: &str) -> String {
+fn hash_belt(input: &str) -> String {
     let mut hasher = BeltHash::new();
     hasher.update(input.as_bytes());
     format!("{:x}", hasher.finalize())
 }
 
-pub fn hash_blake2b512(input: &str) -> String {
+fn hash_blake2b512(input: &str) -> String {
     let mut hasher = Blake2b512::new();
     hasher.update(input.as_bytes());
     format!("{:x}", hasher.finalize())
 }
 
-pub fn hash_blake2s256(input: &str) -> String {
+fn hash_blake2s256(input: &str) -> String {
     let mut hasher = Blake2s256::new();
     hasher.update(input.as_bytes());
     format!("{:x}", hasher.finalize())
 }
 
-pub fn hash_fsb160(input: &str) -> String {
+fn hash_fsb160(input: &str) -> String {
     let mut hasher = Fsb160::new();
     hasher.update(input.as_bytes());
     format!("{:x}", hasher.finalize())
 }
 
-pub fn hash_fsb224(input: &str) -> String {
+fn hash_fsb224(input: &str) -> String {
     let mut hasher = Fsb224::new();
     hasher.update(input.as_bytes());
     format!("{:x}", hasher.finalize())
 }
 
-pub fn hash_fsb256(input: &str) -> String {
+fn hash_fsb256(input: &str) -> String {
     let mut hasher = Fsb256::new();
     hasher.update(input.as_bytes());
     format!("{:x}", hasher.finalize())
 }
 
-pub fn hash_gost94(input: &str) -> String {
+fn hash_gost94(input: &str) -> String {
     let mut hasher = Gost94CryptoPro::new();
     hasher.update(input.as_bytes());
     format!("{:x}", hasher.finalize())
 }
 
-pub fn hash_groestl224(input: &str) -> String {
+fn hash_groestl224(input: &str) -> String {
     let mut hasher = Groestl224::default();
     hasher.update(input.as_bytes());
     format!("{:x}", hasher.finalize())
 }
 
-pub fn hash_groestl256(input: &str) -> String {
+fn hash_groestl256(input: &str) -> String {
     let mut hasher = Groestl256::default();
     hasher.update(input.as_bytes());
     format!("{:x}", hasher.finalize())
 }
 
-pub fn hash_jh224(input: &str) -> String {
+fn hash_jh224(input: &str) -> String {
     let mut hasher = Jh224::new();
     hasher.update(input.as_bytes());
     format!("{:x}", hasher.finalize())
 }
 
-pub fn hash_jh256(input: &str) -> String {
+fn hash_jh256(input: &str) -> String {
     let mut hasher = Jh256::new();
     hasher.update(input.as_bytes());
     format!("{:x}", hasher.finalize())
 }
 
-pub fn hash_jh384(input: &str) -> String {
+fn hash_jh384(input: &str) -> String {
     let mut hasher = Jh384::new();
     hasher.update(input.as_bytes());
     format!("{:x}", hasher.finalize())
 }
 
-pub fn hash_jh512(input: &str) -> String {
+fn hash_jh512(input: &str) -> String {
     let mut hasher = Jh512::new();
     hasher.update(input.as_bytes());
     format!("{:x}", hasher.finalize())
@@ -152,61 +152,61 @@ pub fn hash_jh512(input: &str) -> String {
 //     format!("{:x}", hasher.finalize())
 // }
 
-pub fn hash_md2(input: &str) -> String {
+fn hash_md2(input: &str) -> String {
     let mut hasher = Md2::new();
     hasher.update(input.as_bytes());
     format!("{:x}", hasher.finalize())
 }
 
-pub fn hash_md4(input: &str) -> String {
+fn hash_md4(input: &str) -> String {
     let mut hasher = Md4::new();
     hasher.update(input.as_bytes());
     format!("{:x}", hasher.finalize())
 }
 
-pub fn hash_md5(input: &str) -> String {
+fn hash_md5(input: &str) -> String {
     let hashed = compute(input);
     format!("{:x}", hashed)
 }
 
-pub fn hash_ripemd160(input: &str) -> String {
+fn hash_ripemd160(input: &str) -> String {
     let mut hasher = Ripemd160::new();
     hasher.update(input.as_bytes());
     format!("{:x}", hasher.finalize())
 }
 
-pub fn hash_ripemd256(input: &str) -> String {
+fn hash_ripemd256(input: &str) -> String {
     let mut hasher = Ripemd256::new();
     hasher.update(input.as_bytes());
     format!("{:x}", hasher.finalize())
 }
 
-pub fn hash_ripemd320(input: &str) -> String {
+fn hash_ripemd320(input: &str) -> String {
     let mut hasher = Ripemd320::new();
     hasher.update(input.as_bytes());
     format!("{:x}", hasher.finalize())
 }
 
 
-pub fn hash_sha1(input: &str) -> String {
+fn hash_sha1(input: &str) -> String {
     let mut hasher = Sha1::new();
     hasher.update(input.as_bytes());
     format!("{:x}", hasher.finalize())
 }
 
-pub fn hash_sha3_256(input: &str) -> String {
+fn hash_sha3_256(input: &str) -> String {
     let mut hasher = Sha3_256::new();
     hasher.update(input.as_bytes());
     format!("{:x}", hasher.finalize())
 }
 
-pub fn hash_sha3_512(input: &str) -> String {
+fn hash_sha3_512(input: &str) -> String {
     let mut hasher = Sha3_512::new();
     hasher.update(input.as_bytes());
     format!("{:x}", hasher.finalize())
 }
 
-pub fn hash_shabal256(input: &str) -> String {
+fn hash_shabal256(input: &str) -> String {
     let mut hasher = Shabal256::new();
     hasher.update(input.as_bytes());
     format!("{:x}", hasher.finalize())
@@ -218,43 +218,43 @@ pub fn hash_shabal256(input: &str) -> String {
 //     format!("{:x}", hasher.finalize())
 // }
 
-pub fn hash_sm3(input: &str) -> String {
+fn hash_sm3(input: &str) -> String {
     let mut hasher = Sm3::new();
     hasher.update(input.as_bytes());
     format!("{:x}", hasher.finalize())
 }
 
-pub fn hash_streebog256(input: &str) -> String {
+fn hash_streebog256(input: &str) -> String {
     let mut hasher = Streebog256::new();
     hasher.update(input.as_bytes());
     format!("{:x}", hasher.finalize())
 }
 
-pub fn hash_streebog512(input: &str) -> String {
+fn hash_streebog512(input: &str) -> String {
     let mut hasher = Streebog512::new();
     hasher.update(input.as_bytes());
     format!("{:x}", hasher.finalize())
 }
 
-pub fn hash_sha256(input: &str) -> String {
+fn hash_sha256(input: &str) -> String {
     let mut hasher = Sha256::new();
     hasher.update(input.as_bytes());
     format!("{:x}", hasher.finalize())
 }
 
-pub fn hash_sha512(input: &str) -> String {
+fn hash_sha512(input: &str) -> String {
     let mut hasher = Sha512::new();
     hasher.update(input.as_bytes());
     format!("{:x}", hasher.finalize())
 }
 
-pub fn hash_tiger(input: &str) -> String {
+fn hash_tiger(input: &str) -> String {
     let mut hasher = Tiger::new();
     hasher.update(input.as_bytes());
     format!("{:x}", hasher.finalize())
 }
 
-pub fn hash_whirlpool(input: &str) -> String {
+fn hash_whirlpool(input: &str) -> String {
     let mut hasher = Whirlpool::new();
     hasher.update(input.as_bytes());
     format!("{:x}", hasher.finalize())

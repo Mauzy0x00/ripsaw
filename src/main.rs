@@ -10,9 +10,9 @@
 
 /* 
 TODO: 
-
 1.  Add a function to measure time and try to deterine the amount of threads that would be most
     efficient for the file size. Is mutlithreading more effiecent? Fuck I hope so it took a long time. 
+<<<<<<< Updated upstream
 
 2. ASCII ART! 
  _______ ___________  _____  ___  _    _ _ 
@@ -24,12 +24,22 @@ TODO:
 | |                                     | |
 |_|                                     |_|
 \/                                      \/                
+=======
+2. Bruteforcing
+    Implement an iterator for Bruteforce
+3. Functionality to determine which algorithm was used to generate the given hash 
+4. FASTER FASTER FASTER
+    - GPU Compute
+    - Pre-allocated buffers
+    - SIMD-friendly operations
+>>>>>>> Stashed changes
 */
 
+
 // IO
-use std::io::{self, BufReader, Seek, SeekFrom, BufRead};
 use std::fs::File;
 
+<<<<<<< Updated upstream
 // System info
 
 use std::path::PathBuf;
@@ -37,6 +47,8 @@ use std::path::PathBuf;
 use std::thread::{self};
 use std::sync::{Arc, Mutex};
 use std::thread::JoinHandle;
+=======
+>>>>>>> Stashed changes
 // use std::time::Duration;
 
 // CLI
@@ -44,9 +56,17 @@ use anyhow::{Context, Result};
 use log::{info, warn};
 use clap::Parser;
 
-// Includes
+/// Local Includes
+// Register local modules
+mod library;
 mod hashing;
-use hashing::*;
+mod bruteforce;
+mod dictionary_attack;
+
+// import functions from local modules
+use hashing::get_algorithm;
+use bruteforce::bruteforce;
+use dictionary_attack::{crack_small_wordlist, crack_big_wordlist};
 
 
 /// Struct to parse Command Line Interface arguments
@@ -56,7 +76,7 @@ struct Args {
     #[arg(short = 'c', long = "cyphertext", required = true, help = "Path to the encrypted text.")]
     cyphertext_path: std::path::PathBuf,    // Path to cypher text File
 
-    #[arg(short = 'w', long = "wordlist", required = true, help = "meowmeowmeowmeowmeow!")]
+    #[arg(short = 'w', long = "wordlist", required = false, help = "meowmeowmeowmeowmeow!")]
     wordlist_path: std::path::PathBuf,      // Path to the wordlist
 
     #[arg(short = 'a', long = "algorithm", required = true, help = "Meow (Optional)")]
@@ -71,33 +91,9 @@ struct Args {
 
 
 fn main() -> Result<()> {
-    env_logger::init();
-    info!("Starting log...");
-    warn!("Ayeee a warning!");
+    initialize();
 
-    let banner = r#"
-         _______ ___________  _____  ___  _    _ _ 
-        | | ___ \_   _| ___ \/  ___|/ _ \| |  | | |
-        | | |_/ / | | | |_/ /\ `--./ /_\ \ |  | | |
-        | |    /  | | |  __/  `--. \  _  | |/\| | |
-        | | |\ \ _| |_| |    /\__/ / | | \  /\  / |
-        | \_| \_|\___/\_|    \____/\_| |_/\/  \/| |
-        | |                                     | |
-        |_|                                     |_|
-        \|/                                     \|/ 
-"#;
-    let options = r#"
-    Options:
-    -c, --cyphertext <PATH>    Path to the encrypted text. (required)
-    -w, --wordlist <PATH>      Path to the wordlist. (required)
-    -a, --algorithm <NAME>     Hashing algorithm to use. (required)
-    -t, --threads <NUMBER>     Number of threads used to parse wordlist and crack passwords. (required)
-    -b, --bruteforce           Will bruteforce the hash. Be ready to wait. (optional)
-    "#;
-    
-    println!("{banner}\n{options}");
-
-
+    // Parse user arguments
     let args = Args::parse();
     let mut cyphertext = std::fs::read_to_string(&args.cyphertext_path).with_context(|| format!("File is unreadable! File: `{}`", args.cyphertext_path.display()))?;
     cyphertext = cyphertext.to_lowercase(); // Needs to be lowercase to correctly match hash
@@ -120,8 +116,15 @@ fn main() -> Result<()> {
         let file_size = wordlist_path.metadata().unwrap().len();
         println!("File size: {file_size}");
 
+        if args.bruteforce {
+            bruteforce(cyphertext, 1, thread_count, hash_algorithm);
+        }
         // If the wordlist is larger than 2GB
+<<<<<<< Updated upstream
         if file_size >= 200_000_000 {
+=======
+        else if !args.bruteforce && file_size >= 2_000_000 {
+>>>>>>> Stashed changes
             let cracked = crack_big_wordlist(cyphertext, wordlist_file, file_size, thread_count, hash_algorithm);
 
             if cracked {
@@ -130,7 +133,7 @@ fn main() -> Result<()> {
                 println!("Password match was NOT FOUND in the wordlist {}", wordlist_path.display());
             }
 
-        } else {
+        } else if !args.bruteforce {
 
             let cracked = match crack_small_wordlist(&cyphertext, &wordlist_path, args.cyphertext_path, hash_algorithm) {
                 Err(why) => panic!("Error cracking wordlist {}: {}", wordlist_path.display(), why),
@@ -150,7 +153,12 @@ fn main() -> Result<()> {
     Ok(())
 } // end main
 
+fn initialize() {
+    env_logger::init();
+    info!("Starting log...");
+    warn!("Ayeee a warning!");
 
+<<<<<<< Updated upstream
 /// Crack a hashed password given a large wordlist as the input (Larger than 2GB)
 // Optomize file parsing with its larger size in mind. Cannot just read the entire file into memory (unless user specifies otherwise)
     // Idea:
@@ -325,3 +333,28 @@ fn crack_small_wordlist(cyphertext:&String, wordlist_path: &PathBuf, cyphertext_
     }
     Ok(cracked)
 }
+=======
+    let banner = r#"
+         _______ ___________  _____  ___  _    _ _ 
+        | | ___ \_   _| ___ \/  ___|/ _ \| |  | | |
+        | | |_/ / | | | |_/ /\ `--./ /_\ \ |  | | |
+        | |    /  | | |  __/  `--. \  _  | |/\| | |
+        | | |\ \ _| |_| |    /\__/ / | | \  /\  / |
+        | \_| \_|\___/\_|    \____/\_| |_/\/  \/| |
+        | |                                     | |
+        |_|                                     |_|
+        \|/                                     \|/ 
+"#;
+    let options = r#"
+                ex.  ripsaw -w [path] -c [path] -a sha256 -t 5
+    Options:
+    -c, --cyphertext <PATH>    Path to the encrypted text. (required)
+    -w, --wordlist <PATH>      Path to the wordlist. (required)
+    -a, --algorithm <NAME>     Hashing algorithm to use. (required)
+    -t, --threads <NUMBER>     Number of threads used to parse wordlist and crack passwords. (required)
+    -b, --bruteforce           Will bruteforce the hash. Be ready to wait. (optional)
+    "#;
+    
+    println!("{banner}\n{options}");
+}
+>>>>>>> Stashed changes
