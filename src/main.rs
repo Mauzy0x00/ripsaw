@@ -41,11 +41,12 @@ use std::fs::File;
 
 <<<<<<< Updated upstream
 // System info
-
 use std::path::PathBuf;
+
 // Paralization
 use std::thread::{self};
 use std::sync::{Arc, Mutex};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread::JoinHandle;
 =======
 >>>>>>> Stashed changes
@@ -174,7 +175,7 @@ fn crack_big_wordlist(cyphertext:String, wordlist_file:File, file_size:u64, thre
     println!("Partition size per thread: {partition_size}");
     println!("Building threads...");
 
-    let cracked = Arc::new(Mutex::new(false)); // Mutex wrap the cracked bool so we can broadcast to each thread if another thread has found a match
+    let cracked = Arc::new(AtomicBool::new(false)); // Mutex wrap the cracked bool so we can broadcast to each thread if another thread has found a match
 
     let mutex_wordlist_file = Arc::new(Mutex::new(wordlist_file)); // Wrap the Mutex in Arc for mutual excusion of the file and an atomic reference across threads
     
@@ -182,8 +183,7 @@ fn crack_big_wordlist(cyphertext:String, wordlist_file:File, file_size:u64, thre
 
     for thread_id in 0..thread_count {
         let wordlist_file = Arc::clone(&mutex_wordlist_file);   // Create a clone of the mutex_worldist_file: Arc<Mutex><File>> for each thread
-        let cracked_bool = Arc::clone(&cracked);          // Create a clone of mutex_cracked for each thread
-        
+        let cracked = Arc::clone(&cracked);                      // Clone of cracked for each thread
         let cyphertext = cyphertext.to_string();                               // Allocate the cyphertext data in scope for each thread
 
         let handle = thread::spawn(move || {
@@ -238,7 +238,7 @@ fn crack_big_wordlist(cyphertext:String, wordlist_file:File, file_size:u64, thre
             drop(wordlist_file); // Drop is now the owner and its scope has ended. So Is this not neccessary and the lock is freed after the seek and read?
 
             println!("Starting to crack on thread {thread_id}");
-            if crack_vector(lines, cyphertext, hash_algorithm, &cracked_bool) {
+            if crack_vector(lines, cyphertext, hash_algorithm, &cracked) {
                 println!("cracked!");
             } else {
                 println!("Not cracked on thread {thread_id} :(");
@@ -254,31 +254,28 @@ fn crack_big_wordlist(cyphertext:String, wordlist_file:File, file_size:u64, thre
         handle.join().expect("Thread Panicked :(");
     }
 
-    let cracked = cracked.lock().unwrap();
-    
-    *cracked
+    cracked.load(Ordering::Relaxed)
 } // end get_file_size
 
 
 /// Iterate over the passed vector and hash the string at that index before checking to see if it matches the
 /// passed cypher text. If it does, return that a match has been found (cracked)
 // Refactored function to increase readability of the large wordlist crack function
-fn crack_vector(lines: Vec<String>, cyphertext:String, hash_algorithm:fn(&str)->String, cracked:&Arc<Mutex<bool>>) -> bool {
+fn crack_vector(lines: Vec<String>, cyphertext:String, hash_algorithm:fn(&str)->String, cracked:&Arc<AtomicBool<>>) -> bool {
     let mut match_found = false;
 
     for string in lines.iter() {
 
-        let mut this_cracked = cracked.lock().unwrap(); // Get the value cracked flag from the main thread
         let hashed_word = hash_algorithm(string);
 
         if cyphertext == hashed_word {
+            cracked.store(true, Ordering::Relaxed);
             println!("Match Found!\nPassword: {}", string);
             match_found = true;
-            *this_cracked = true;   // Change the global value for cracked 
             break;
         
         // If another thread has cracked the hash then break out of cracking loop
-        } else if *this_cracked {
+        } else if cracked.load(Ordering::Relaxed) {
             break;
         }
     }
