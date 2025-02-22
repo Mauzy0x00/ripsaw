@@ -14,12 +14,12 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread::JoinHandle;
 
 /// Function to crack a hash with a wordlist that is smaller than 2GB
-pub fn crack_small_wordlist(cyphertext:&String, wordlist_path: &PathBuf, cyphertext_path: PathBuf, hash_algorithm:fn(&str)->String) -> Result<bool, Error> {
+pub fn crack_small_wordlist(cyphertext:&String, wordlist_path: &PathBuf, hash_algorithm:fn(&str)->String) -> Result<bool, Error> {
     let mut cracked = false;
     // Create a reading buffer to the file pointer
     //let reader = BufReader::new(wordlist_file);
     println!("Loading wordlist into memory");
-    let string_wordlist = std::fs::read_to_string(wordlist_path).with_context(|| format!("File is unreadable! File: `{}`", cyphertext_path.display()))?;
+    let string_wordlist = std::fs::read_to_string(wordlist_path).with_context(|| format!("File is unreadable! File: `{}`", wordlist_path.display()))?;
     
     println!("Starting to crack!");
     for line in string_wordlist.lines() {

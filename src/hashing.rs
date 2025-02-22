@@ -22,44 +22,42 @@ use tiger::Tiger;
 use whirlpool::Whirlpool;
 
 
-/// Hashmap to match user supplied algorithm to hashing funciton
-use std::collections::HashMap;
+/// Match user supplied algorithm to hashing funciton
 pub fn get_algorithm(algorithm: &str) -> Option<fn(&str) -> String> {
-    let mut algorithms: HashMap<&str, fn(&str) -> String> = HashMap::new();
-
-    algorithms.insert("ascon", hash_ascon);
-    algorithms.insert("belt", hash_belt);
-    algorithms.insert("fsb160", hash_fsb160);
-    algorithms.insert("fsb224", hash_fsb224);
-    algorithms.insert("fsb256", hash_fsb256);
-    algorithms.insert("sha256", hash_sha256);
-    algorithms.insert("sha512", hash_sha512);
-    algorithms.insert("md2", hash_md2);
-    algorithms.insert("md4", hash_md4);
-    algorithms.insert("md5", hash_md5);
-    algorithms.insert("ripemd160", hash_ripemd160);
-    algorithms.insert("ripemd256", hash_ripemd256);
-    algorithms.insert("ripemd320", hash_ripemd320);
-    algorithms.insert("sha1", hash_sha1);
-    algorithms.insert("sha3_256", hash_sha3_256);
-    algorithms.insert("sha3_512", hash_sha3_512);
-    algorithms.insert("blake2b512", hash_blake2b512);
-    algorithms.insert("blake2s256", hash_blake2s256);
-    algorithms.insert("gost94", hash_gost94);
-    algorithms.insert("groestl224", hash_groestl224);
-    algorithms.insert("groestl256", hash_groestl256);
-    algorithms.insert("jh224", hash_jh224);
-    algorithms.insert("jh256", hash_jh256);
-    algorithms.insert("jh384", hash_jh384);
-    algorithms.insert("jh512", hash_jh512);
-    algorithms.insert("shabal256", hash_shabal256);
-    algorithms.insert("sm3", hash_sm3);
-    algorithms.insert("streebog256", hash_streebog256);
-    algorithms.insert("streebog512", hash_streebog512);
-    algorithms.insert("tiger", hash_tiger);
-    algorithms.insert("whirlpool", hash_whirlpool);
-
-    algorithms.get(algorithm).copied()
+    match algorithm {
+        "ascon" => Some(hash_ascon),
+        "belt" => Some(hash_belt),
+        "fsb160" => Some(hash_fsb160),
+        "fsb224" => Some(hash_fsb224),
+        "fsb256" => Some(hash_fsb256),
+        "sha256" => Some(hash_sha256),
+        "sha512" => Some(hash_sha512),
+        "md2" => Some(hash_md2),
+        "md4" => Some(hash_md4),
+        "md5" => Some(hash_md5),
+        "ripemd160" => Some(hash_ripemd160),
+        "ripemd256" => Some(hash_ripemd256),
+        "ripemd320" => Some(hash_ripemd320),
+        "sha1" => Some(hash_sha1),
+        "sha3_256" => Some(hash_sha3_256),
+        "sha3_512" => Some(hash_sha3_512),
+        "blake2b512" => Some(hash_blake2b512),
+        "blake2s256" => Some(hash_blake2s256),
+        "gost94" => Some(hash_gost94),
+        "groestl224" => Some(hash_groestl224),
+        "groestl256" => Some(hash_groestl256),
+        "jh224" => Some(hash_jh224),
+        "jh256" => Some(hash_jh256),
+        "jh384" => Some(hash_jh384),
+        "jh512" => Some(hash_jh512),
+        "shabal256" => Some(hash_shabal256),
+        "sm3" => Some(hash_sm3),
+        "streebog256" => Some(hash_streebog256),
+        "streebog512" => Some(hash_streebog512),
+        "tiger" => Some(hash_tiger),
+        "whirlpool" => Some(hash_whirlpool),
+        _ => None,
+    }
 }
 
 fn hash_ascon(input: &str) -> String {

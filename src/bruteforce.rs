@@ -68,6 +68,7 @@ pub fn bruteforce(cyphertext:String, length:usize, thread_count:u8, hash_algorit
         let cyphertext = cyphertext.to_string();               // Allocate the cyphertext data in scope for each thread
         let division_of_work = 20;
 
+        
         let handle = thread::spawn(move || {
             // THREAD'S JOB!
         }); 
