@@ -13,7 +13,7 @@ TODO:
 1.  Add a function to measure time and try to deterine the amount of threads that would be most
     efficient for the file size. Is mutlithreading more effiecent? Fuck I hope so it took a long time. 
 2. Bruteforcing
-    Implement an iterator for Bruteforce
+    Work out issues with generation and threadpooling 
 3. Functionality to determine which algorithm was used to generate the given hash 
 4. Functionality for Salt and Pepper
 5. FASTER FASTER FASTER
@@ -32,7 +32,7 @@ use clap::Parser;
 // use std::time::Duration;
 
 // CLI
-use anyhow::{Context, Result};
+use anyhow::Result;
 use log::{info, warn};
 
 /// Local Includes
@@ -57,35 +57,39 @@ fn main() -> Result<()> {
     let args = Args::parse();
 
     match args.command {
-        Commands::Bruteforce {
-            cyphertext_path,
-            thread_count,
-            min_length,
-            algorithm,
-        } => {
-            let cyphertext = std::fs::read_to_string(&cyphertext_path)?
-                .to_lowercase();
-            if let Some(algorithm_function) = get_algorithm(&algorithm) {
-
-                bruteforce(cyphertext, min_length, thread_count, algorithm_function);
-
-            } else {
-                eprintln!("Sorry! Passed hashing algorithm ({algorithm}) has not been implemented")
-            }
-        }
 
         Commands::Wordlist {
             cyphertext_path,
             wordlist_path,
             algorithm,
             thread_count,
+            verbose,
         } => {
             let cyphertext = std::fs::read_to_string(&cyphertext_path)?
                 .to_lowercase();
 
             if let Some(algorithm_function) = get_algorithm(&algorithm) {
                 
-                process_wordlist(cyphertext, &wordlist_path, algorithm_function, thread_count)?;
+                process_wordlist(cyphertext, &wordlist_path, algorithm_function, thread_count, verbose)?;
+
+            } else {
+                eprintln!("Sorry! Passed hashing algorithm ({algorithm}) has not been implemented")
+            }
+        }
+
+        
+        Commands::Bruteforce {
+            cyphertext_path,
+            thread_count,
+            min_length,
+            algorithm,
+            verbose,
+        } => {
+            let cyphertext = std::fs::read_to_string(&cyphertext_path)?
+                .to_lowercase();
+            if let Some(algorithm_function) = get_algorithm(&algorithm) {
+
+                bruteforce(cyphertext, min_length, thread_count, algorithm_function, verbose);
 
             } else {
                 eprintln!("Sorry! Passed hashing algorithm ({algorithm}) has not been implemented")
@@ -95,6 +99,7 @@ fn main() -> Result<()> {
 
     Ok(())
 } // end main
+
 
 fn initialize() {
     env_logger::init();
@@ -113,20 +118,25 @@ fn initialize() {
         \|/                                     \|/ 
 "#;
     let options = r#"
-                ex.  ripsaw -w [path] -c [path] -a sha256 -t 5
+                ex. ripsaw wordlist -w [path] -c [path] -a sha256 -t 5 -v
     Options:
-    -c, --cyphertext <PATH>    Path to the encrypted text. (required)
-    -w, --wordlist <PATH>      Path to the wordlist. (required)
-    -a, --algorithm <NAME>     Hashing algorithm to use. (required)
-    -t, --threads <NUMBER>     Number of threads used to parse wordlist and crack passwords. (required)
-    -b, --bruteforce           Will bruteforce the hash. Be ready to wait. (optional)
+    wordlist
+        -c, --cyphertext <PATH>    Path to the encrypted text. (required)
+        -w, --wordlist <PATH>      Path to the wordlist. (required)
+        -a, --algorithm <NAME>     Hashing algorithm to use. (required)
+        -t, --threads <NUMBER>     Number of threads used to parse wordlist and crack passwords. (required)
+    
+    bruteforce
+        -c, --cyphertext <PATH>    Path to the encrypted text. (required)
+        -a, --algorithm <NAME>     Hashing algorithm to use. (required)
+        -t, --threads <NUMBER>     Number of threads used to parse wordlist and crack passwords. (required)
     "#;
     
     println!("{banner}\n{options}");
 }
 
-fn process_wordlist(cyphertext: String, wordlist_path: &PathBuf, algorithm: fn(&str) -> String, thread_count: u8) -> Result<()> {
 
+fn process_wordlist(cyphertext: String, wordlist_path: &PathBuf, algorithm: fn(&str) -> String, thread_count: u8, verbose: bool) -> Result<()> {
 
     // Open passed wordlist file
     // Open the path in read-only mode, returns `io::Result<File>`
@@ -141,7 +151,7 @@ fn process_wordlist(cyphertext: String, wordlist_path: &PathBuf, algorithm: fn(&
 
     // If the wordlist is larger than 2GB
     if file_size >= 2_000_000 {
-        let cracked = crack_big_wordlist(cyphertext, wordlist_file, file_size, thread_count, algorithm);
+        let cracked = crack_big_wordlist(cyphertext, wordlist_file, file_size, thread_count, algorithm, verbose);
 
         if cracked {
             println!("Password match was FOUND in the wordlist {}", wordlist_path.display());

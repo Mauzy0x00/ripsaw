@@ -1,91 +1,13 @@
 
 
 
-// Parallelization
-use std::thread::{self};
-use std::sync::{Arc, Mutex, Condvar};
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::thread::JoinHandle;
+use std::{
+    sync::{atomic::{AtomicBool, Ordering}, Arc, Condvar, Mutex}, 
+    thread::{self}, 
+    time::{Duration, Instant}
+};
 
-
-
-// NEEDS: a.List of characters; b.Distrubtion method across threads; c.method of bruteforcing with a wordlist or phrase; d.common password patterns
-/// Divide and conquer
-pub fn bruteforce(cyphertext:String, length:usize, thread_count:u8, hash_algorithm:fn(&str)->String) -> bool {
-
-    let cracked = Arc::new(AtomicBool::new(false)); // Mutex wrap the cracked bool so we can broadcast to each thread if another thread has found a match
-    let mut handles: Vec<JoinHandle<()>> = vec![]; // A vector of thread handles
-    
-
-
-    // Rainbow table ??
-    // Avoid collisions 
-    // Create a thread pool
-    // Define a job list / number of threads
-    // Assign given number of threads with available jobs ; ensure jobs don't have combined values
-    // To save time, a wordlist with pre-generated values should be given so the program can focus on hashing
-    // Jobs can be assigned a weight to indicate their importance in the list of jobs
-        /* JOBS: 
-        GENERATION workers: Worker threads tasked with generating a list of word combinations. 
-        * Assign Jobs in order of relevance. ie. most common password patterns first
-            - Lowercase
-            - Uppercase
-            - numbers
-            - symbols
-
-            - Lowercase w/ uppercase - Split
-            - Lowercase w/ numbers - Split
-            - Lowercase w/ symbols - Split
-
-            - Uppercase w/ Lowercase - Split
-            - Uppercase w/ numbers - Split
-            - Uppercase w/ symbols - Split
-
-            - Uppercase w/ Lowercase w/ numbers - Split x2
-            - Uppercase w/ Lowercase w/ symbols - Split x2
-            - Uppercase w/ Lowercase w/ numbers - Split x2
-
-            - Uppercase w/ numbers - Split
-            - Uppercase w/ symbols - Split
-        
-        
-        CRACKING workers
-        
-        
-        
-        */ 
-
-        // Alternatively, Calculate all possible combinations in a wordlist and have a thread pool iterate over this list 
-        // Then the array 
-
-    // Character set generation
-    let charset = CharacterSet::default();
-    let mut generator = Generator::new(&charset, true, true, true, false, length);
-
-
-    for thread_id in 0..thread_count {
-        let cracked = Arc::clone(&cracked);     // Clone of cracked for each thread
-        let cyphertext = cyphertext.to_string();               // Allocate the cyphertext data in scope for each thread
-        let division_of_work = 20;
-
-        
-        let handle = thread::spawn(move || {
-            // THREAD'S JOB!
-        }); 
-        
-        if cracked.load(Ordering::Relaxed) {
-            handles.push(handle);   // Push the handles out of the for loop context so they may be joined
-        }
-    }
-
-    // Iterate ove the vector of handles and join them to conclude cracking
-    for handle in handles {
-        handle.join().expect("Thread Panicked :(");
-    }
-    
-    cracked.load(Ordering::Relaxed)
-} // end bruteforce
-
+use crate::library::ThreadPool;
 
 /// Available character sets for password generation
 struct CharacterSet {
@@ -107,48 +29,80 @@ impl Default for CharacterSet {
     }
 }
 
+/// Password generator with work distribution
 struct Generator {
     charset: Vec<char>,
-    indices: Vec<usize>,
+    current: Vec<usize>,
+    length: usize,
     done: bool,
+    thread_id: usize,
+    thread_count: usize,
+    counter: usize,
+    skip_interval: usize,
 }
 
-// Generator implementation 
 impl Generator {
-    fn new(charset: &CharacterSet, use_lower: bool, use_upper: bool, use_numbers: bool, use_symbols: bool, length: usize) -> Self {
+    fn new(
+        charset: &CharacterSet,
+        use_lower: bool,
+        use_upper: bool,
+        use_numbers: bool,
+        use_symbols: bool,
+        length: usize,
+        thread_id: usize,
+        thread_count: usize,
+    ) -> Self {
         let mut chars = String::new();
         
-        if use_lower {
-            chars.push_str(charset.lowercase);
+        if use_lower { chars.push_str(charset.lowercase); }
+        if use_upper { chars.push_str(charset.uppercase); }
+        if use_numbers { chars.push_str(charset.numbers); }
+        if use_symbols { chars.push_str(charset.symbols); }   
 
+        let charset: Vec<char> = chars.chars().collect();
+        let skip_interval = thread_count;
+
+        // Start at our thread's specific offset in the sequence
+        let mut current = vec![0; length];
+        
+        // Advance to our starting position based on thread_id
+        for _ in 0..thread_id {
+            Self::advance_indices(&mut current, &charset);
         }
-        if use_upper {
-            chars.push_str(charset.uppercase);
-
-        }
-        if use_numbers {
-            chars.push_str(charset.numbers);
-
-        }
-        if use_symbols {
-            chars.push_str(charset.symbols);
-
-        }   
-
-        let charset = chars.chars().collect();
 
         Self {
             charset,
-            indices: vec![0, length],
+            current,
+            length,
             done: false,
+            thread_id,
+            thread_count,
+            counter: 0,
+            skip_interval,
         }
+    }
+    
+    // Helper method to advance indices
+    fn advance_indices(indices: &mut [usize], charset: &[char]) {
+        let charset_len = charset.len();
+        
+        for i in (0..indices.len()).rev() {
+            if indices[i] + 1 < charset_len {
+                indices[i] += 1;
+                break;
+            } else {
+                indices[i] = 0;
+                // Continue to next position if we wrapped around
+            }
+        }
+    }
+    
+    // Generate current password
+    fn current_password(&self) -> String {
+        self.current.iter().map(|&i| self.charset[i]).collect()
     }
 }
 
-
-// Implement an iterator for Generator to iterate over different char combinations
-// Iterator is a trait. Traits are implemented by structs, they don't exist on their own. You could also have a reference trait object (&Iterator), 
-// a boxed trait object (Box<Iterator>) or an anonymous trait implementation (impl Iterator), all of which have a known sizes.
 impl Iterator for Generator {
     type Item = String;
 
@@ -157,20 +111,144 @@ impl Iterator for Generator {
             return None;
         }
 
-        let result: String = self.indices.iter().map(|&i| self.charset[i]).collect();
-
-        for i in (0..self.indices.len()).rev() {
-            if self.indices[i] + 1 < self.charset.len() {
-                self.indices[i] += 1;
-                break;
-            } else {
-                self.indices[i] = 0;
-                if i == 0 {
-                    self.done = true;
+        // Get current password
+        let result = self.current_password();
+        
+        // Advance counter
+        self.counter += 1;
+        
+        // Advance indices skip_interval times (to skip other threads' work)
+        for _ in 0..self.skip_interval {
+            let charset_len = self.charset.len();
+            let mut carry = true;
+            
+            for i in (0..self.length).rev() {
+                if carry {
+                    if self.current[i] + 1 < charset_len {
+                        self.current[i] += 1;
+                        carry = false;
+                    } else {
+                        self.current[i] = 0;
+                        // carry remains true for next position
+                    }
                 }
+            }
+            
+            // If we carried beyond the most significant position, we're done
+            if carry {
+                self.done = true;
+                break;
             }
         }
 
         Some(result)
     }
+}
+
+
+
+// Main brute force function with improved implementation
+// Divide and conquer
+pub fn bruteforce(
+    cyphertext: String,
+    length: usize,
+    thread_count: u8,
+    hash_algorithm: fn(&str) -> String,
+    verbose: bool
+) -> Option<String> {
+
+    let start_time = Instant::now();
+    let cracked = Arc::new(AtomicBool::new(false));
+    let password_found = Arc::new(Mutex::new(None::<String>));
+    
+    // Create a thread pool
+    let pool = ThreadPool::new(thread_count as usize);
+    
+    // Character set generation
+    let charset = CharacterSet::default();
+
+    // Launch worker threads
+    for thread_id in 0..thread_count {
+        let cracked_clone = Arc::clone(&cracked);
+        let password_found_clone = Arc::clone(&password_found);
+        let cyphertext_clone = cyphertext.clone();
+        
+        pool.execute(move || {
+            // Create a generator for this thread's portion of the work
+            let generator = Generator::new(
+                &CharacterSet::default(),
+                true,     // use lowercase
+                true,     // use uppercase
+                true,   // use numbers
+                false,  // skip symbols initially for speed
+                length,
+                thread_id as usize,
+                thread_count as usize,
+            );
+            
+            let mut attempts: u32 = 0;
+            
+            // Try passwords until we find a match or another thread signals success
+            for attempt in generator {
+                attempts += 1;
+                
+                // Check if another thread found the password
+                if cracked_clone.load(Ordering::Relaxed) {
+                    break;
+                }
+                
+                // Calculate hash and compare
+                println!("Generated {}", attempt);
+                let attempt_hash = hash_algorithm(&attempt);
+                
+                if attempt_hash == cyphertext_clone {
+                    // Save the found password
+                    let mut found = password_found_clone.lock().unwrap();
+                    *found = Some(attempt.clone());
+                    
+                    // Signal other threads to stop
+                    cracked_clone.store(true, Ordering::Relaxed);
+                    
+                    if verbose {
+                        println!("Password found by thread {}: {}", thread_id, attempt);
+                        println!("Attempts by this thread: {}", attempts);
+                    }
+                    
+                    break;
+                }
+                
+                // Print progress occasionally
+                if verbose && attempts % 1_000_000 == 0 {
+                    println!("Thread {} has tried {} passwords", thread_id, attempts);
+                }
+            }
+        });
+    }
+    
+    // Wait for completion or a timeout
+    let timeout = Duration::from_secs(3600); // 1 hour timeout
+    let mut elapsed = Duration::new(0, 0);
+    let sleep_interval = Duration::from_millis(100);
+    
+    while !cracked.load(Ordering::Relaxed) && elapsed < timeout {
+        thread::sleep(sleep_interval);
+        elapsed += sleep_interval;
+    }
+    
+    // Shutdown the pool (will wait for all threads to finish)
+    pool.shutdown();
+    
+    // Return the found password if any
+    let result = password_found.lock().unwrap().clone();
+    
+    if verbose {
+        if let Some(ref pwd) = result {
+            println!("Password cracked: {}", pwd);
+        } else {
+            println!("Password not found within timeout.");
+        }
+        println!("Total time: {:.2}s", start_time.elapsed().as_secs_f64());
+    }
+    
+    result
 }

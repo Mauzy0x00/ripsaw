@@ -28,6 +28,9 @@ pub enum Commands {
 
         #[arg(short = 'a', long = "algorithm", help = "Hashing algorithm to use.")]
         algorithm: String,
+
+        #[arg(short = 'v', long = "verbose", help = "Verbose output.")]
+        verbose: bool,
     },
 
     /// Wordlist attack mode
@@ -43,5 +46,8 @@ pub enum Commands {
 
         #[arg(short = 't', long = "threads", help = "Number of threads.")]
         thread_count: u8,
+
+        #[arg(short = 'v', long = "verbose", help = "Verbose output.")]
+        verbose: bool,
     },
 }

@@ -1,3 +1,11 @@
+/*
+*   This file contains available hashing algorthms.
+*   Include or implement new algorithms here. Make sure to add the hash function to the 'get_algorithm' match
+*
+*
+*/
+
+
 use ascon_hash::AsconHash;
 use belt_hash::BeltHash;
 use blake2::{Blake2b512, Blake2s256};
