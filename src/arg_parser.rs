@@ -4,7 +4,7 @@
 
 
 use clap::{Parser, Subcommand};
-use std::path::PathBuf;
+use std::{net::Ipv4Addr, path::PathBuf};
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None, arg_required_else_help(true))]
@@ -61,4 +61,27 @@ pub enum Commands {
         #[arg(short = 'v', long = "verbose", help = "Verbose output.")]
         verbose: bool,
     },
+
+    Ssh {
+        #[arg(short = 'i', long = "ip", help = "The target SSH server IP address.")]
+        server: String,
+
+        #[arg(short = 'p', long = "port", help = "The target SSH server port.")]
+        port: u16,
+
+        #[arg(short = 'u', long = "user", help = "The target user to login as.")]
+        user: String,
+
+        #[arg(short = 'w', long = "wordlist", help = "Path to the wordlist.")]
+        wordlist_path: PathBuf,
+
+        #[arg(short = 's', long = "salt", help = "String to prefix each item in the given wordlist.")]
+        salt: String,
+
+        #[arg(short = 't', long = "threads", help = "Number of threads.")]
+        thread_count: u8,
+
+        #[arg(short = 'v', long = "verbose", help = "Verbose output.")]
+        verbose: bool,
+    }
 }
