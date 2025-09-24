@@ -34,6 +34,9 @@ pub enum Commands {
         #[arg(short = 'a', long = "algorithm", help = "Hashing algorithm to use.")]
         algorithm: String,
 
+        #[arg(short = 's', long = "salt", help = "String to prefix each generated word.")]
+        salt: String,
+
         #[arg(short = 'v', long = "verbose", help = "Verbose output.")]
         verbose: bool,
     },
@@ -48,6 +51,9 @@ pub enum Commands {
 
         #[arg(short = 'a', long = "algorithm", help = "Hashing algorithm to use.")]
         algorithm: String,
+
+        #[arg(short = 's', long = "salt", help = "String to prefix each item in the given wordlist.")]
+        salt: String,
 
         #[arg(short = 't', long = "threads", help = "Number of threads.")]
         thread_count: u8,

@@ -46,10 +46,10 @@ mod dictionary_attack;
 
 // import functions from local modules
 use arg_parser::{Args, Commands};
+use library::Config;
 use hashing::get_algorithm;
 use bruteforce::bruteforce;
 use dictionary_attack::{crack_small_wordlist, crack_big_wordlist};
-
 
 fn main() -> Result<()> {
     
@@ -63,15 +63,22 @@ fn main() -> Result<()> {
             cyphertext_path,
             wordlist_path,
             algorithm,
+            salt,
             thread_count,
             verbose,
         }) => {
+
+            let config = Config {
+                salt_present: !salt.is_empty(), // I think this is right. might be backwards
+                verbose,
+            };
+            
             let cyphertext = std::fs::read_to_string(&cyphertext_path)?
                 .to_lowercase();
 
             if let Some(algorithm_function) = get_algorithm(&algorithm) {
                 
-                process_wordlist(cyphertext, &wordlist_path, algorithm_function, thread_count, verbose)?;
+                process_wordlist(salt, cyphertext, &wordlist_path, algorithm_function, thread_count, config)?;
 
             } else {
                 eprintln!("Sorry! Passed hashing algorithm ({algorithm}) has not been implemented")
@@ -84,13 +91,20 @@ fn main() -> Result<()> {
             thread_count,
             min_length,
             algorithm,
+            salt,
             verbose,
         }) => {
+
+            let config = Config {
+                salt_present: !salt.is_empty(), // I think this is right. might be backwards
+                verbose,
+            };
+
             let cyphertext = std::fs::read_to_string(&cyphertext_path)?
                 .to_lowercase();
             if let Some(algorithm_function) = get_algorithm(&algorithm) {
 
-                bruteforce(cyphertext, min_length, thread_count, algorithm_function, verbose);
+                bruteforce(salt, cyphertext, min_length, thread_count, algorithm_function, config);
 
             } else {
                 eprintln!("Sorry! Passed hashing algorithm ({algorithm}) has not been implemented")
@@ -128,13 +142,22 @@ fn initialize() {
         | |                                     | |
         |_|                                     |_|
         \|/                                     \|/ 
+
+        Rip and Tear. . .
 "#;
-    
-    println!("{banner}");
+
+    println!("{banner}\n");
 }
 
 
-fn process_wordlist(cyphertext: String, wordlist_path: &PathBuf, algorithm: fn(&str) -> String, thread_count: u8, verbose: bool) -> Result<()> {
+fn process_wordlist(
+    salt: String, 
+    cyphertext: String, 
+    wordlist_path: &PathBuf, 
+    algorithm: fn(&str) -> String, 
+    thread_count: u8, 
+    config: Config,
+) -> Result<()> {
 
     // Open passed wordlist file
     // Open the path in read-only mode, returns `io::Result<File>`
@@ -149,7 +172,7 @@ fn process_wordlist(cyphertext: String, wordlist_path: &PathBuf, algorithm: fn(&
 
     // If the wordlist is larger than 2GB
     if file_size >= 2_000_000 {
-        let cracked = crack_big_wordlist(cyphertext, wordlist_file, file_size, thread_count, algorithm, verbose);
+        let cracked = crack_big_wordlist(salt, cyphertext, wordlist_file, file_size, thread_count, algorithm, config);
 
         if cracked {
             println!("Password match was FOUND in the wordlist {}", wordlist_path.display());
@@ -158,7 +181,7 @@ fn process_wordlist(cyphertext: String, wordlist_path: &PathBuf, algorithm: fn(&
         }
 
     } else {
-        let cracked = match crack_small_wordlist(&cyphertext, wordlist_path, algorithm) {
+        let cracked = match crack_small_wordlist(salt, &cyphertext, wordlist_path, algorithm, config) {
             Err(why) => panic!("Error cracking wordlist {}: {}", wordlist_path.display(), why),
             Ok(cracked) => cracked,
         };

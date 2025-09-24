@@ -7,7 +7,7 @@ use std::{
     time::{Duration, Instant}
 };
 
-use crate::library::ThreadPool;
+use crate::library::{Config, ThreadPool};
 
 /// Available character sets for password generation
 struct CharacterSet {
@@ -150,11 +150,12 @@ impl Iterator for Generator {
 // Main brute force function with improved implementation
 // Divide and conquer
 pub fn bruteforce(
+    salt: String,
     cyphertext: String,
     length: usize,
     thread_count: u8,
     hash_algorithm: fn(&str) -> String,
-    verbose: bool
+    config: Config
 ) -> Option<String> {
 
     let start_time = Instant::now();
@@ -209,7 +210,7 @@ pub fn bruteforce(
                     // Signal other threads to stop
                     cracked_clone.store(true, Ordering::Relaxed);
                     
-                    if verbose {
+                    if config.verbose {
                         println!("Password found by thread {}: {}", thread_id, attempt);
                         println!("Attempts by this thread: {}", attempts);
                     }
@@ -218,7 +219,7 @@ pub fn bruteforce(
                 }
                 
                 // Print progress occasionally
-                if verbose && attempts % 1_000_000 == 0 {
+                if config.verbose && attempts % 1_000_000 == 0 {
                     println!("Thread {} has tried {} passwords", thread_id, attempts);
                 }
             }
@@ -241,7 +242,7 @@ pub fn bruteforce(
     // Return the found password if any
     let result = password_found.lock().unwrap().clone();
     
-    if verbose {
+    if config.verbose {
         if let Some(ref pwd) = result {
             println!("Password cracked: {}", pwd);
         } else {
