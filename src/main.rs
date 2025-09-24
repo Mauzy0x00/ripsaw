@@ -27,7 +27,8 @@ TODO:
 use std::fs::File;
 use std::path::PathBuf;
 
-use clap::Parser;
+use clap::{Command, Parser};
+use colored::Colorize;
 
 // use std::time::Duration;
 
@@ -58,14 +59,14 @@ fn main() -> Result<()> {
 
     match args.command {
 
-        Commands::Wordlist {
+        Some(Commands::Wordlist {
             cyphertext_path,
             wordlist_path,
             algorithm,
             salt,
             thread_count,
             verbose,
-        } => {
+        }) => {
 
             let config = Config {
                 salt_present: !salt.is_empty(), // I think this is right. might be backwards
@@ -84,15 +85,15 @@ fn main() -> Result<()> {
             }
         }
 
-
-        Commands::Bruteforce {
+        
+        Some(Commands::Bruteforce {
             cyphertext_path,
             thread_count,
             min_length,
             algorithm,
             salt,
             verbose,
-        } => {
+        }) => {
 
             let config = Config {
                 salt_present: !salt.is_empty(), // I think this is right. might be backwards
@@ -109,6 +110,17 @@ fn main() -> Result<()> {
                 eprintln!("Sorry! Passed hashing algorithm ({algorithm}) has not been implemented")
             }
         }
+
+        None => {}
+    }
+
+    // list all the hasing algorithms from the list in hashing.rs
+    if args.list {
+        println!("{}", "Hashing Algorithms Available:".bold().underline());
+        for i in hashing::ALGORITHMS.iter() {
+            println!("  {}", i);
+        }
+        println!("\n");
     }
 
     Ok(())
