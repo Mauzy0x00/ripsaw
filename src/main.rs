@@ -27,7 +27,7 @@ TODO:
 use std::fs::File;
 use std::path::PathBuf;
 
-use clap::Parser;
+use clap::{Command, Parser};
 
 // use std::time::Duration;
 
@@ -117,22 +117,8 @@ fn initialize() {
         |_|                                     |_|
         \|/                                     \|/ 
 "#;
-    let options = r#"
-                ex. ripsaw wordlist -w [path] -c [path] -a sha256 -t 5 -v
-    Options:
-    wordlist
-        -c, --cyphertext <PATH>    Path to the encrypted text. (required)
-        -w, --wordlist <PATH>      Path to the wordlist. (required)
-        -a, --algorithm <NAME>     Hashing algorithm to use. (required)
-        -t, --threads <NUMBER>     Number of threads used to parse wordlist and crack passwords. (required)
     
-    bruteforce
-        -c, --cyphertext <PATH>    Path to the encrypted text. (required)
-        -a, --algorithm <NAME>     Hashing algorithm to use. (required)
-        -t, --threads <NUMBER>     Number of threads used to parse wordlist and crack passwords. (required)
-    "#;
-    
-    println!("{banner}\n{options}");
+    println!("{banner}");
 }
 
 
