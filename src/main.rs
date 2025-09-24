@@ -58,13 +58,13 @@ fn main() -> Result<()> {
 
     match args.command {
 
-        Commands::Wordlist {
+        Some(Commands::Wordlist {
             cyphertext_path,
             wordlist_path,
             algorithm,
             thread_count,
             verbose,
-        } => {
+        }) => {
             let cyphertext = std::fs::read_to_string(&cyphertext_path)?
                 .to_lowercase();
 
@@ -78,13 +78,13 @@ fn main() -> Result<()> {
         }
 
         
-        Commands::Bruteforce {
+        Some(Commands::Bruteforce {
             cyphertext_path,
             thread_count,
             min_length,
             algorithm,
             verbose,
-        } => {
+        }) => {
             let cyphertext = std::fs::read_to_string(&cyphertext_path)?
                 .to_lowercase();
             if let Some(algorithm_function) = get_algorithm(&algorithm) {
@@ -95,6 +95,12 @@ fn main() -> Result<()> {
                 eprintln!("Sorry! Passed hashing algorithm ({algorithm}) has not been implemented")
             }
         }
+
+        None => {}
+    }
+
+    if args.list {
+        println!("list algorithm command goes here")
     }
 
     Ok(())

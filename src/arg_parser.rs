@@ -9,8 +9,13 @@ use std::path::PathBuf;
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None, arg_required_else_help(true))]
 pub struct Args {
+    // the subcommands for different modules
     #[command(subcommand)]
-    pub command: Commands,
+    pub command: Option<Commands>,
+
+    // global commands
+    #[arg(short = 'l', long = "list", help = "List available hashing algorithms.")]
+    pub list: bool
 }
 
 #[derive(Subcommand, Debug)]
