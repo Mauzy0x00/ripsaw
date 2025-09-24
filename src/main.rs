@@ -28,6 +28,7 @@ use std::fs::File;
 use std::path::PathBuf;
 
 use clap::{Command, Parser};
+use colored::Colorize;
 
 // use std::time::Duration;
 
@@ -99,8 +100,13 @@ fn main() -> Result<()> {
         None => {}
     }
 
+    // list all the hasing algorithms from the list in hashing.rs
     if args.list {
-        println!("list algorithm command goes here")
+        println!("{}", "Hashing Algorithms Available:".bold().underline());
+        for i in hashing::ALGORITHMS.iter() {
+            println!("  {}", i);
+        }
+        println!("\n");
     }
 
     Ok(())

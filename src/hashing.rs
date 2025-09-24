@@ -29,6 +29,39 @@ use streebog::{Streebog256, Streebog512};
 use tiger::Tiger;
 use whirlpool::Whirlpool;
 
+pub const ALGORITHMS: [&str; 31] = [
+    "ascon",
+    "belt",
+    "fsb160",
+    "fsb224",
+    "fsb256",
+    "sha256",
+    "sha512",
+    "md2",
+    "md4",
+    "md5",
+    "ripemd160",
+    "ripemd256",
+    "ripemd320",
+    "sha1",
+    "sha3_256",
+    "sha3_512",
+    "blake2b512",
+    "blake2s256",
+    "gost94",
+    "groestl224",
+    "groestl256",
+    "jh224",
+    "jh256",
+    "jh384",
+    "jh512",
+    "shabal256",
+    "sm3",
+    "streebog256",
+    "streebog512",
+    "tiger",
+    "whirlpool",
+];
 
 /// Match user supplied algorithm to hashing funciton
 pub fn get_algorithm(algorithm: &str) -> Option<fn(&str) -> String> {
