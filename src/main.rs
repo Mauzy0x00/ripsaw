@@ -121,12 +121,13 @@ fn main() -> Result<()> {
             salt,
             verbose,
         }) => {
+
             let config = Config {
                 salt_present: !salt.is_empty(), // I think this is right. might be backwards
                 verbose,
             };
 
-            ssh::ssh_socket(server, port, user, "password".to_string(), config);
+            ssh::ssh_socket(server, port, user, wordlist_path, config)?;
         }
 
         None => {}
