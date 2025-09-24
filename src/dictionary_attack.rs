@@ -3,7 +3,7 @@
 
 
 
-use crate::library::crack_vector;
+use crate::library::{Config, crack_vector};
 
 use anyhow::{Context, Error};
 use std::result::Result::Ok;
@@ -14,7 +14,9 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread::JoinHandle;
 
 /// Function to crack a hash with a wordlist that is smaller than 2GB
-pub fn crack_small_wordlist(cyphertext:&String, wordlist_path: &PathBuf, hash_algorithm:fn(&str)->String) -> Result<bool, Error> {
+pub fn crack_small_wordlist(salt: String, cyphertext: &String, wordlist_path: &PathBuf, hash_algorithm:fn(&str)->String, config: Config) -> Result<bool, Error> {
+            // Change String to &str ^              ^
+    
     let mut cracked = false;
     // Create a reading buffer to the file pointer
     //let reader = BufReader::new(wordlist_file);
@@ -45,7 +47,7 @@ pub fn crack_small_wordlist(cyphertext:&String, wordlist_path: &PathBuf, hash_al
     //      Each thread uses a mutex to read a portion of its partition into memory.
     //          The sum of data read into memory from each thread should not exceed 2GB.
     // Create # of threads specified by user for cracking the password list
-pub fn crack_big_wordlist(cyphertext:String, wordlist_file:File, file_size:u64, thread_count:u8, hash_algorithm:fn(&str)->String, verbose:bool) -> bool {
+pub fn crack_big_wordlist(salt: String, cyphertext:String, wordlist_file:File, file_size:u64, thread_count:u8, hash_algorithm:fn(&str)->String, config: Config) -> bool {
 
     let partition_size = file_size / thread_count as u64; // Get the  size of each thread partition
 
@@ -76,7 +78,7 @@ pub fn crack_big_wordlist(cyphertext:String, wordlist_file:File, file_size:u64, 
                             };
 
         // Request and lock the file
-            if verbose { println!("[+] Thread {thread_id} is now reading from wordlist"); }
+            if config.verbose { println!("[+] Thread {thread_id} is now reading from wordlist"); }
             let mut wordlist_file = wordlist_file.lock().unwrap();
 
             // Count how many lines are in this current partition
@@ -110,7 +112,7 @@ pub fn crack_big_wordlist(cyphertext:String, wordlist_file:File, file_size:u64, 
                 }
             }
 
-            if verbose { println!("Thread {thread_id} finished reading {} lines.", lines.len()); }
+            if config.verbose { println!("Thread {thread_id} finished reading {} lines.", lines.len()); }
         // Unlock the file and iterate over vector
             drop(wordlist_file); // Drop is now the owner and its scope has ended. So Is this not neccessary and the lock is freed after the seek and read?
 

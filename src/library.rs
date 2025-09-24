@@ -11,6 +11,11 @@ use std::{
 };
 use std::collections::VecDeque;
 
+pub struct Config {
+    pub salt_present: bool,
+    pub verbose: bool,
+}
+
 /// Iterate over the passed vector and hash the string at that index before checking to see if it matches the
 /// passed cypher text. If it does, return that a match has been found (cracked)
 // Refactored function to increase readability of the large wordlist crack function

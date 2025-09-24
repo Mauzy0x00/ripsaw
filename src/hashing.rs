@@ -28,7 +28,7 @@ use sm3::Sm3;
 use streebog::{Streebog256, Streebog512};
 use tiger::Tiger;
 use whirlpool::Whirlpool;
-
+use yescrypt::yescrypt;
 
 /// Match user supplied algorithm to hashing funciton
 pub fn get_algorithm(algorithm: &str) -> Option<fn(&str) -> String> {
@@ -265,3 +265,13 @@ fn hash_whirlpool(input: &str) -> String {
     hasher.update(input.as_bytes());
     format!("{:x}", hasher.finalize())
 }
+
+// fn hash_yescrypt(input: &str) -> String {
+//     // Input will be the next word in the wordlist.
+//     // -- We need to get the parameters and salt. 
+//     // Remember... simpliest solution is likely the greatest solution
+//     let salt = b"salt";
+//     let params = b"params";
+//     yescrypt::yescrypt_kdf(input, salt)?;
+//     Ok(())
+// }
