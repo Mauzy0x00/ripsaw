@@ -15,7 +15,7 @@ TODO:
 2. Bruteforcing
     Work out issues with generation and threadpooling 
 3. Functionality to determine which algorithm was used to generate the given hash 
-4. Functionality for Salt and Pepper
+4. Functionality for and Pepper
 5. FASTER FASTER FASTER
     - GPU Compute
     - Pre-allocated buffers
@@ -172,7 +172,7 @@ fn process_wordlist(
 
     // If the wordlist is larger than 2GB
     if file_size >= 2_000_000 {
-        let cracked = crack_big_wordlist(salt, cyphertext, wordlist_file, file_size, thread_count, algorithm, config);
+        let cracked = crack_big_wordlist(&salt, &cyphertext, wordlist_file, file_size, thread_count, algorithm, config);
 
         if cracked {
             println!("Password match was FOUND in the wordlist {}", wordlist_path.display());
@@ -181,7 +181,7 @@ fn process_wordlist(
         }
 
     } else {
-        let cracked = match crack_small_wordlist(salt, &cyphertext, wordlist_path, algorithm, config) {
+        let cracked = match crack_small_wordlist(&salt, &cyphertext, wordlist_path, algorithm, config) {
             Err(why) => panic!("Error cracking wordlist {}: {}", wordlist_path.display(), why),
             Ok(cracked) => cracked,
         };

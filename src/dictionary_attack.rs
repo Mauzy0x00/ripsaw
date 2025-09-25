@@ -14,8 +14,13 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread::JoinHandle;
 
 /// Function to crack a hash with a wordlist that is smaller than 2GB
-pub fn crack_small_wordlist(salt: String, cyphertext: &String, wordlist_path: &PathBuf, hash_algorithm:fn(&str)->String, config: Config) -> Result<bool, Error> {
-            // Change String to &str ^              ^
+pub fn crack_small_wordlist(
+    salt: &str,
+    cyphertext: &str,
+    wordlist_path: &PathBuf,
+    hash_algorithm: fn(&str)->String,
+    config: Config
+) -> Result<bool, Error> {
     
     let mut cracked = false;
     // Create a reading buffer to the file pointer
@@ -23,19 +28,47 @@ pub fn crack_small_wordlist(salt: String, cyphertext: &String, wordlist_path: &P
     println!("[+] Loading wordlist into memory");
     let string_wordlist = std::fs::read_to_string(wordlist_path).with_context(|| format!("File is unreadable! File: `{}`", wordlist_path.display()))?;
     
-    println!("Starting to crack!");
-    for line in string_wordlist.lines() {
+    // Thinking of speed.. We don't want to do string operations for every line if the salt is present...
+    // Lets instead change our list to prefix each item with the salt perhaps.. Probably a better way and need to figure that out for a big wordlist. But for now lets just implement this...
+    if config.salt_present {
+        if config.verbose { println!("[+] Prefixing wordlist items with salt '{}'", salt); }
+        let mut salty_lines = String::new();
 
-        let hashed_word = hash_algorithm(line);
+        for line in string_wordlist.lines() {
+            let line = line.to_string();     // Convert the line to a string
+            salty_lines = format!("{salt}{line}");
+        }
 
-        if *cyphertext == hashed_word {
-            println!("cyphertext: {}", *cyphertext);
-            println!("hashed word: {hashed_word}");
-            println!("Match Found!\nPassword: {}", &line);
-            cracked = true;
-            break;
+        println!("[+] Starting to crack!");
+
+        for line in salty_lines.lines() {
+            let hashed_word = hash_algorithm(line);
+
+            if cyphertext == hashed_word {
+                println!("cyphertext: {}", cyphertext);
+                println!("hashed word: {hashed_word}");
+                println!("Match Found!\nPassword: {}", &line);
+                cracked = true;
+                break;
+            }
+        }
+    } else {  // Cracking with no salt
+
+        println!("[+] Starting to crack!");
+        for line in string_wordlist.lines() {
+        
+            let hashed_word = hash_algorithm(line);
+
+            if cyphertext == hashed_word {
+                println!("cyphertext: {}", cyphertext);
+                println!("hashed word: {hashed_word}");
+                println!("Match Found!\nPassword: {}", &line);
+                cracked = true;
+                break;
+            }
         }
     }
+
     Ok(cracked)
 }
 
@@ -47,7 +80,15 @@ pub fn crack_small_wordlist(salt: String, cyphertext: &String, wordlist_path: &P
     //      Each thread uses a mutex to read a portion of its partition into memory.
     //          The sum of data read into memory from each thread should not exceed 2GB.
     // Create # of threads specified by user for cracking the password list
-pub fn crack_big_wordlist(salt: String, cyphertext:String, wordlist_file:File, file_size:u64, thread_count:u8, hash_algorithm:fn(&str)->String, config: Config) -> bool {
+pub fn crack_big_wordlist(
+    salt: &str,
+    cyphertext: &str,
+    wordlist_file: File,
+    file_size: u64,
+    thread_count: u8,
+    hash_algorithm: fn(&str)->String,
+    config: Config
+) -> bool {
 
     let partition_size = file_size / thread_count as u64; // Get the  size of each thread partition
 
@@ -65,6 +106,7 @@ pub fn crack_big_wordlist(salt: String, cyphertext:String, wordlist_file:File, f
         let wordlist_file = Arc::clone(&mutex_wordlist_file);   // Create a clone of the mutex_worldist_file: Arc<Mutex><File>> for each thread
         let cracked = Arc::clone(&cracked);                      // Clone of cracked for each thread
         let cyphertext = cyphertext.to_string();                               // Allocate the cyphertext data in scope for each thread
+        let salt = salt.to_string();
 
         let handle = thread::spawn(move || {
             // Calculate current thread's assigned memory space (assigned partition)
@@ -83,7 +125,7 @@ pub fn crack_big_wordlist(salt: String, cyphertext:String, wordlist_file:File, f
 
             // Count how many lines are in this current partition
             let line_count:usize = match count_lines_in_partition(&mut wordlist_file, start, end) {
-                Err(why) => panic!("Error counting lines on thread {} because {}", thread_id, why),
+                Err(why) => panic!("[X] Error counting lines on thread {} because {}", thread_id, why),
                 Ok(line_count) => line_count,
             };
 
@@ -113,14 +155,24 @@ pub fn crack_big_wordlist(salt: String, cyphertext:String, wordlist_file:File, f
             }
 
             if config.verbose { println!("Thread {thread_id} finished reading {} lines.", lines.len()); }
-        // Unlock the file and iterate over vector
+            
+            // Unlock the file and iterate over vector
             drop(wordlist_file); // Drop is now the owner and its scope has ended. So Is this not neccessary and the lock is freed after the seek and read?
 
-            println!("Starting to crack on thread {thread_id}");
+            // If the salt is present. prefix each word with the salt before begining to hash
+            if config.salt_present {
+                if config.verbose { println!("[+] Salting your wordlist...")}
+                for line in lines.iter_mut() {
+                    *line = format!("{salt}{line}");
+                }
+            }
+
+            if config.verbose { println!("[+] Starting to crack on thread {thread_id}"); }
+            
             if crack_vector(lines, cyphertext, hash_algorithm, &cracked) {
-                println!("cracked!");
+                println!("[✓] cracked!");
             } else {
-                println!("Not cracked on thread {thread_id} :(");
+                println!("[X] Not cracked on thread {thread_id} :(");
             }
 
         }); // End of thread
@@ -134,11 +186,12 @@ pub fn crack_big_wordlist(salt: String, cyphertext:String, wordlist_file:File, f
     }
 
     cracked.load(Ordering::Relaxed)
-} // end get_file_size
+} // end crack_big_wordlist
 
 
 use std::fs::File;
 use std::io::{self, BufReader, Seek, SeekFrom, BufRead};
+
 /// Count how many lines are in the portion of the file that was partitioned to each thread
 // Refactored function to increase readability of the large wordlist crack function
 fn count_lines_in_partition(file: &mut File, start: u64, end: u64) -> io::Result<usize> {
