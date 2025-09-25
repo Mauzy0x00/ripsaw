@@ -23,7 +23,7 @@ TODO:
 */
 
 // IO
-use std::fs::File;
+use std::fs::{self, File};
 use std::path::PathBuf;
 
 use clap::Parser;
@@ -42,6 +42,7 @@ mod bruteforce;
 mod dictionary_attack;
 mod hashing;
 mod library;
+mod tests;
 
 // import functions from local modules
 use arg_parser::{Args, Commands};
@@ -112,6 +113,40 @@ fn main() -> Result<()> {
                 eprintln!("Sorry! Passed hashing algorithm ({algorithm}) has not been implemented")
             }
         }
+        Some(Commands::Generate {
+            plaintext,
+            algorithm,
+            output_path,
+        }) => {
+            if let Some(algorithm_function) = get_algorithm(&algorithm) {
+                let cypher_text = algorithm_function("plaintext");
+                match output_path {
+                    Some(o) => {
+                        if fs::exists(&o)? {
+                            eprintln!("File already exists.");
+                        } else {
+                            fs::write(&o, cypher_text)?;
+                            println!(
+                                "Hashed plaintext {} with algorithm {}. Saved to file {}.",
+                                plaintext,
+                                algorithm,
+                                o.to_str().expect(
+                                    "in main, commands::generate: Path is empty??? this SHOULD NOT HAppen. Call the police!!"
+                                )
+                            );
+                        }
+                    }
+                    None => {
+                        println!(
+                            "Hashed plaintext {} with algorithm {}:\n{}\n",
+                            plaintext, algorithm, cypher_text
+                        );
+                    }
+                }
+            } else {
+                eprintln!("Sorry! Passed hashing algorithm ({algorithm}) has not been implemented")
+            }
+        }
 
         None => {}
     }
@@ -127,6 +162,7 @@ fn main() -> Result<()> {
 
     Ok(())
 } // end main
+
 
 /// Initializes logging, and prints the banner
 fn initialize() {

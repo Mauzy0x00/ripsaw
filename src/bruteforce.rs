@@ -30,6 +30,8 @@ impl Default for CharacterSet {
 }
 
 /// Password generator with work distribution
+// mauzy get your shit together...
+#[allow(dead_code)]
 struct Generator {
     charset: Vec<char>,
     current: Vec<usize>,
@@ -157,7 +159,7 @@ impl Iterator for Generator {
 // Main brute force function with improved implementation
 // Divide and conquer
 pub fn bruteforce(
-    salt: String,
+    _salt: String,
     cyphertext: String,
     length: usize,
     thread_count: u8,
@@ -172,7 +174,7 @@ pub fn bruteforce(
     let pool = ThreadPool::new(thread_count as usize);
 
     // Character set generation
-    let charset = CharacterSet::default();
+    let _charset = CharacterSet::default();
 
     // Launch worker threads
     for thread_id in 0..thread_count {
@@ -225,7 +227,7 @@ pub fn bruteforce(
                 }
 
                 // Print progress occasionally
-                if config.verbose && attempts % 1_000_000 == 0 {
+                if config.verbose && attempts.is_multiple_of(1_000_000) {
                     println!("Thread {} has tried {} passwords", thread_id, attempts);
                 }
             }

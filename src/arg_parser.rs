@@ -6,6 +6,7 @@
 *             Some of the arguments for each mode are optional; Defined with 'default_value = "foobar"'
 */
 
+
 use clap::{Parser, Subcommand};
 use std::path::PathBuf;
 
@@ -87,5 +88,24 @@ pub enum Commands {
 
         #[arg(short = 'v', long = "verbose", help = "Verbose output.")]
         verbose: bool,
+    },
+    /// Generate Mode
+    Generate {
+        // so.. generate is a mode that will take in a plaintext as well as a cypher and generate a
+        // cypher text using the selected cipher.
+        // -o will output to <user>.txt
+        #[arg(short = 'p', long = "plaintext", help = "Plaintext to encyrpt.")]
+        plaintext: String,
+
+        #[arg(short = 'a', long = "algorithm", help = "Hashing algorithm to use.")]
+        algorithm: String,
+
+        #[arg(
+            short = 'o',
+            long = "output",
+            default_value = None,
+            help = "Name of the file to output cyphertext to."
+        )]
+        output_path: Option<PathBuf>,
     },
 }

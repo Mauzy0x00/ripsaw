@@ -2,6 +2,7 @@
 *
 *   A collection of public supporting functions and structures
 *
+*
 */
 
 use std::collections::VecDeque;

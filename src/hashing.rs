@@ -30,7 +30,7 @@ use sm3::Sm3;
 use streebog::{Streebog256, Streebog512};
 use tiger::Tiger;
 use whirlpool::Whirlpool;
-use yescrypt::yescrypt;
+//use yescrypt::yescrypt;
 
 pub const ALGORITHMS: [&str; 31] = [
     "ascon",
