@@ -1,7 +1,10 @@
-
-
-
-
+/*  Ripsaw
+*   
+*   Uses the clap library to parse user CLI input.
+*   Args: Single command arguments that produce an output
+*   Commands: These are command 'modes' that take many inputs to perform a task and output to the user.
+*             Some of the arguments for each mode are optional; Defined with 'default_value = "foobar"'
+*/
 
 use clap::{Parser, Subcommand};
 use std::path::PathBuf;

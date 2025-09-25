@@ -1,7 +1,10 @@
-
-
-
-
+/*  Ripsaw
+*
+*   Contains functions for cracking wordlists: crack_small_wordlist, crack_large_wordlist, count_lines_in_partition.
+*   - crack_small_wordlist and crack_large_wordlist are called by process_wordlist in main.rs
+*   - crack_large_wordlist depends upon count_lines_in_partition and crack_vector which is in lib.rs
+*
+*/
 
 use crate::library::{Config, crack_vector};
 
@@ -13,7 +16,7 @@ use std::sync::{Arc, Mutex};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread::JoinHandle;
 
-/// Function to crack a hash with a wordlist that is smaller than 2GB
+/// Single threaded function to crack a hash with a wordlist with support for prefixed salts
 pub fn crack_small_wordlist(
     salt: &str,
     cyphertext: &str,
@@ -28,8 +31,6 @@ pub fn crack_small_wordlist(
     println!("[+] Loading wordlist into memory");
     let string_wordlist = std::fs::read_to_string(wordlist_path).with_context(|| format!("File is unreadable! File: `{}`", wordlist_path.display()))?;
     
-    // Thinking of speed.. We don't want to do string operations for every line if the salt is present...
-    // Lets instead change our list to prefix each item with the salt perhaps.. Probably a better way and need to figure that out for a big wordlist. But for now lets just implement this...
     if config.salt_present {
         if config.verbose { println!("[+] Prefixing wordlist items with salt '{}'", salt); }
         let mut salty_lines = String::new();

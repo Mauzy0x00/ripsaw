@@ -1,6 +1,6 @@
-/*
+/*  Ripsaw
 *   
-*   A collection of supporting functions
+*   A collection of public supporting functions and structures
 *
 */
 
@@ -11,6 +11,7 @@ use std::{
 };
 use std::collections::VecDeque;
 
+/// Used to carry Command configuration options to functions that want it
 pub struct Config {
     pub salt_present: bool,
     pub verbose: bool,
