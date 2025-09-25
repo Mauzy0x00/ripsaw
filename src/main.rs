@@ -42,8 +42,8 @@ mod bruteforce;
 mod dictionary_attack;
 mod hashing;
 mod library;
-mod tests;
 mod ssh;
+mod tests;
 
 // import functions from local modules
 use arg_parser::{Args, Commands};
@@ -158,7 +158,6 @@ fn main() -> Result<()> {
             salt,
             verbose,
         }) => {
-
             let config = Config {
                 salt_present: !salt.is_empty(), // I think this is right. might be backwards
                 verbose,
@@ -181,7 +180,6 @@ fn main() -> Result<()> {
 
     Ok(())
 } // end main
-
 
 /// Initializes logging, and prints the banner
 fn initialize() {

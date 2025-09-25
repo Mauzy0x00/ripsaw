@@ -1,9 +1,9 @@
 use anyhow::{Context, Error, Ok};
+use ssh2;
 use std::net::TcpStream;
 use std::net::{IpAddr, SocketAddr};
 use std::path::PathBuf;
 use std::result::Result;
-use ssh2;
 
 use crate::library;
 
@@ -42,7 +42,7 @@ pub fn attack(
     user: String,
     wordlist_path: PathBuf,
     config: library::Config,
-) -> Result<bool, Error>{
+) -> Result<bool, Error> {
     let mut cracked = false;
 
     let mut session = ssh_socket(&addr, port);
