@@ -127,7 +127,7 @@ fn main() -> Result<()> {
                 verbose,
             };
 
-            ssh::ssh_socket(server, port, user, wordlist_path, config)?;
+            ssh::attack(server, port, user, wordlist_path, config);
         }
 
         None => {}

