@@ -37,7 +37,6 @@ pub fn crack_vector(lines: Vec<String>, cyphertext:String, hash_algorithm:fn(&st
             break;
         }
     }
-
     match_found
 } // end crack_vector
 
