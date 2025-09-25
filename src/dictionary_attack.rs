@@ -28,8 +28,6 @@ pub fn crack_small_wordlist(
     println!("[+] Loading wordlist into memory");
     let string_wordlist = std::fs::read_to_string(wordlist_path).with_context(|| format!("File is unreadable! File: `{}`", wordlist_path.display()))?;
     
-    // Thinking of speed.. We don't want to do string operations for every line if the salt is present...
-    // Lets instead change our list to prefix each item with the salt perhaps.. Probably a better way and need to figure that out for a big wordlist. But for now lets just implement this...
     if config.salt_present {
         if config.verbose { println!("[+] Prefixing wordlist items with salt '{}'", salt); }
         let mut salty_lines = String::new();
@@ -145,7 +143,13 @@ pub fn crack_big_wordlist(
                     break;
                 }
 
-                lines.push(line.trim().to_string());
+                if config.salt_present {
+                    // prefix each line with the salt
+                    line = salt.to_string() + &line;
+                    lines.push(line.trim().to_string());
+                } else {
+                    lines.push(line.trim().to_string());
+                }
 
                 current_position += bytes_read as u64;
 
@@ -158,14 +162,6 @@ pub fn crack_big_wordlist(
             
             // Unlock the file and iterate over vector
             drop(wordlist_file); // Drop is now the owner and its scope has ended. So Is this not neccessary and the lock is freed after the seek and read?
-
-            // If the salt is present. prefix each word with the salt before begining to hash
-            if config.salt_present {
-                if config.verbose { println!("[+] Salting your wordlist...")}
-                for line in lines.iter_mut() {
-                    *line = format!("{salt}{line}");
-                }
-            }
 
             if config.verbose { println!("[+] Starting to crack on thread {thread_id}"); }
             
