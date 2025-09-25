@@ -1,15 +1,18 @@
 /*  Ripsaw
-*   
+*
 *   A collection of public supporting functions and structures
 *
 */
 
+use std::collections::VecDeque;
 use std::{
-    sync::{atomic::{AtomicBool, Ordering}, Arc, Condvar, Mutex}, 
-    thread::{self}, 
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc, Condvar, Mutex,
+    },
+    thread::{self},
     time::Duration,
 };
-use std::collections::VecDeque;
 
 /// Used to carry Command configuration options to functions that want it
 pub struct Config {
@@ -20,11 +23,15 @@ pub struct Config {
 /// Iterate over the passed vector and hash the string at that index before checking to see if it matches the
 /// passed cypher text. If it does, return that a match has been found (cracked)
 // Refactored function to increase readability of the large wordlist crack function
-pub fn crack_vector(lines: Vec<String>, cyphertext:String, hash_algorithm:fn(&str)->String, cracked:&Arc<AtomicBool<>>) -> bool {
+pub fn crack_vector(
+    lines: Vec<String>,
+    cyphertext: String,
+    hash_algorithm: fn(&str) -> String,
+    cracked: &Arc<AtomicBool>,
+) -> bool {
     let mut match_found = false;
 
     for string in lines.iter() {
-
         let hashed_word = hash_algorithm(string);
 
         if cyphertext == hashed_word {
@@ -32,7 +39,7 @@ pub fn crack_vector(lines: Vec<String>, cyphertext:String, hash_algorithm:fn(&st
             println!("Match Found!\nPassword: {}", string);
             match_found = true;
             break;
-        
+
         // If another thread has cracked the hash then break out of cracking loop
         } else if cracked.load(Ordering::Relaxed) {
             break;
@@ -40,7 +47,6 @@ pub fn crack_vector(lines: Vec<String>, cyphertext:String, hash_algorithm:fn(&st
     }
     match_found
 } // end crack_vector
-
 
 // Thread Pool implementation
 type Task = Box<dyn FnOnce() + Send + 'static>;
@@ -61,7 +67,7 @@ impl ThreadPool {
         for _ in 0..num_workers {
             let sender_clone = sender.clone();
             let running_clone = running.clone();
-            
+
             let worker = thread::spawn(move || {
                 while running_clone.load(Ordering::Relaxed) {
                     let task = {
@@ -70,8 +76,10 @@ impl ThreadPool {
 
                         // Wait for a task or until shutdown
                         while queue.is_empty() && running_clone.load(Ordering::Relaxed) {
-
-                            queue = condition_variable.wait_timeout(queue, Duration::from_millis(100)).unwrap().0;
+                            queue = condition_variable
+                                .wait_timeout(queue, Duration::from_millis(100))
+                                .unwrap()
+                                .0;
                             if !running_clone.load(Ordering::Relaxed) && queue.is_empty() {
                                 return;
                             }
@@ -85,11 +93,15 @@ impl ThreadPool {
                     }
                 }
             });
-            
+
             workers.push(worker);
         }
 
-        ThreadPool { workers, sender, running }
+        ThreadPool {
+            workers,
+            sender,
+            running,
+        }
     }
 
     pub fn execute<F>(&self, f: F)
@@ -106,11 +118,11 @@ impl ThreadPool {
     pub fn shutdown(self) {
         // Signal threads to stop
         self.running.store(false, Ordering::Relaxed);
-        
+
         // Wake up all threads
         let (_, condition_variable) = &*self.sender;
         condition_variable.notify_all();
-        
+
         // Wait for all threads to finish
         for worker in self.workers {
             let _ = worker.join();

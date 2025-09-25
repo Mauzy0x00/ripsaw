@@ -1,5 +1,5 @@
 /*  Ripsaw
-*   
+*
 *   Uses the clap library to parse user CLI input.
 *   Args: Single command arguments that produce an output
 *   Commands: These are command 'modes' that take many inputs to perform a task and output to the user.
@@ -17,8 +17,12 @@ pub struct Args {
     pub command: Option<Commands>,
 
     // global commands
-    #[arg(short = 'l', long = "list", help = "List available hashing algorithms.")]
-    pub list: bool
+    #[arg(
+        short = 'l',
+        long = "list",
+        help = "List available hashing algorithms."
+    )]
+    pub list: bool,
 }
 
 #[derive(Subcommand, Debug)]
@@ -28,7 +32,12 @@ pub enum Commands {
         #[arg(short = 'c', long = "cyphertext", help = "Path to the encrypted text.")]
         cyphertext_path: PathBuf,
 
-        #[arg(short = 't', long = "threads", default_value = "10", help = "Number of threads.")]
+        #[arg(
+            short = 't',
+            long = "threads",
+            default_value = "10",
+            help = "Number of threads."
+        )]
         thread_count: u8,
 
         #[arg(short = 'm', long = "min-length", help = "Minimum password length.")]
@@ -37,7 +46,12 @@ pub enum Commands {
         #[arg(short = 'a', long = "algorithm", help = "Hashing algorithm to use.")]
         algorithm: String,
 
-        #[arg(short = 's', long = "salt", default_value = "",help = "String to prefix each generated word.")]
+        #[arg(
+            short = 's',
+            long = "salt",
+            default_value = "",
+            help = "String to prefix each generated word."
+        )]
         salt: String,
 
         #[arg(short = 'v', long = "verbose", help = "Verbose output.")]
@@ -55,10 +69,20 @@ pub enum Commands {
         #[arg(short = 'a', long = "algorithm", help = "Hashing algorithm to use.")]
         algorithm: String,
 
-        #[arg(short = 's', long = "salt", default_value = "", help = "String to prefix each item in the given wordlist.")]
+        #[arg(
+            short = 's',
+            long = "salt",
+            default_value = "",
+            help = "String to prefix each item in the given wordlist."
+        )]
         salt: String,
 
-        #[arg(short = 't', long = "threads", default_value = "10", help = "Number of threads.")]
+        #[arg(
+            short = 't',
+            long = "threads",
+            default_value = "10",
+            help = "Number of threads."
+        )]
         thread_count: u8,
 
         #[arg(short = 'v', long = "verbose", help = "Verbose output.")]
