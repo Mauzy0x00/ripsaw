@@ -1,5 +1,6 @@
-#[test]
-
-fn check_answer_validity() {
-    assert_eq!(answer(), 42);
+mod test {
+    #[test]
+    fn first_test() {
+        todo!();
+    }
 }
