@@ -163,6 +163,8 @@ fn main() -> Result<()> {
     Ok(())
 } // end main
 
+
+/// Initializes logging, and prints the banner
 fn initialize() {
     env_logger::init();
     info!("Starting log...");
@@ -185,6 +187,9 @@ fn initialize() {
     println!("{banner}\n");
 }
 
+/// Will open the passed path buffer, calculate the size of the passed file and determine which cracking
+/// method is best suited for its size. This will then call either 'crack_big_wordlist' (>=2GB) or
+/// use 'crack_small_wordlist'.
 fn process_wordlist(
     salt: String,
     cyphertext: String,

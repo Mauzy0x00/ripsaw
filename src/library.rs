@@ -1,6 +1,7 @@
-/*
+/*  Ripsaw
 *
-*   A collection of supporting functions
+*   A collection of public supporting functions and structures
+*
 *
 */
 
@@ -14,6 +15,7 @@ use std::{
     time::Duration,
 };
 
+/// Used to carry Command configuration options to functions that want it
 pub struct Config {
     pub salt_present: bool,
     pub verbose: bool,
@@ -44,7 +46,6 @@ pub fn crack_vector(
             break;
         }
     }
-
     match_found
 } // end crack_vector
 

@@ -1,7 +1,10 @@
-/*
-*   This file contains available hashing algorthms.
-*   Include or implement new algorithms here. Make sure to add the hash function to the 'get_algorithm' match
+/*  Ripsaw
 *
+*   This file contains available hashing algorthms.
+*   Include or implement new algorithms here. Make sure to add the hash function to the 'get_algorithm' match and
+*   the Algorithms constant array. Might need to come up with a new way to implement get_algorithm to fit other
+*   algorithm implementations; else re-write those implementations to fit this design.
+*   The algorithms already implemented are from the RustCrypto crate.
 *
 */
 

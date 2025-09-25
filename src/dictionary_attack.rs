@@ -1,3 +1,11 @@
+/*  Ripsaw
+*
+*   Contains functions for cracking wordlists: crack_small_wordlist, crack_large_wordlist, count_lines_in_partition.
+*   - crack_small_wordlist and crack_large_wordlist are called by process_wordlist in main.rs
+*   - crack_large_wordlist depends upon count_lines_in_partition and crack_vector which is in lib.rs
+*
+*/
+
 use crate::library::{crack_vector, Config};
 
 use anyhow::{Context, Error};
@@ -8,7 +16,7 @@ use std::sync::{Arc, Mutex};
 use std::thread::JoinHandle;
 use std::thread::{self};
 
-/// Function to crack a hash with a wordlist that is smaller than 2GB
+/// Single threaded function to crack a hash with a wordlist with support for prefixed salts
 pub fn crack_small_wordlist(
     salt: &str,
     cyphertext: &str,
@@ -23,8 +31,6 @@ pub fn crack_small_wordlist(
     let string_wordlist = std::fs::read_to_string(wordlist_path)
         .with_context(|| format!("File is unreadable! File: `{}`", wordlist_path.display()))?;
 
-    // Thinking of speed.. We don't want to do string operations for every line if the salt is present...
-    // Lets instead change our list to prefix each item with the salt perhaps.. Probably a better way and need to figure that out for a big wordlist. But for now lets just implement this...
     if config.salt_present {
         if config.verbose {
             println!("[+] Prefixing wordlist items with salt '{}'", salt);
@@ -149,7 +155,13 @@ pub fn crack_big_wordlist(
                     break;
                 }
 
-                lines.push(line.trim().to_string());
+                if config.salt_present {
+                    // prefix each line with the salt
+                    line = salt.to_string() + &line;
+                    lines.push(line.trim().to_string());
+                } else {
+                    lines.push(line.trim().to_string());
+                }
 
                 current_position += bytes_read as u64;
 
@@ -164,24 +176,11 @@ pub fn crack_big_wordlist(
 
             // Unlock the file and iterate over vector
             drop(wordlist_file); // Drop is now the owner and its scope has ended. So Is this not neccessary and the lock is freed after the seek and read?
-
-            // If the salt is present. prefix each word with the salt before begining to hash
-            if config.salt_present {
-                if config.verbose {
-                    println!("[+] Salting your wordlist...")
-                }
-                for line in lines.iter_mut() {
-                    *line = format!("{salt}{line}");
-                }
-            }
-
-            if config.verbose {
-                println!("[+] Starting to crack on thread {thread_id}");
-            }
-
+          
             if crack_vector(lines, cyphertext, hash_algorithm, &cracked) {
                 println!("[✓] cracked!");
-            } else {
+                println!("\n[-] Cleaning up remaining threads...");
+            } else if config.verbose {
                 println!("[X] Not cracked on thread {thread_id} :(");
             }
         }); // End of thread
