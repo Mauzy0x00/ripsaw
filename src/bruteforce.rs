@@ -2,7 +2,7 @@
 
 
 use std::{
-    sync::{atomic::{AtomicBool, Ordering}, Arc, Condvar, Mutex}, 
+    sync::{atomic::{AtomicBool, Ordering}, Arc, Mutex}, 
     thread::{self}, 
     time::{Duration, Instant}
 };
@@ -41,6 +41,7 @@ struct Generator {
     skip_interval: usize,
 }
 
+#[allow(clippy::too_many_arguments)]
 impl Generator {
     fn new(
         charset: &CharacterSet,

@@ -27,7 +27,7 @@ TODO:
 use std::fs::File;
 use std::path::PathBuf;
 
-use clap::{Command, Parser};
+use clap::Parser;
 use colored::Colorize;
 
 // use std::time::Duration;
