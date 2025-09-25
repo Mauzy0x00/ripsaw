@@ -1,5 +1,5 @@
 use anyhow::{Context, Error, Ok};
-use ssh2;
+use ssh2::Session;
 use std::net::TcpStream;
 use std::net::{IpAddr, SocketAddr};
 use std::path::PathBuf;
@@ -31,7 +31,7 @@ fn ssh_socket(addr: &str, port: u16) -> Result<ssh2::Session, Error> {
     // Connect to the local SSH server
     let addr: IpAddr = addr.parse().expect("parse failed");
     let socket = SocketAddr::from((addr, port));
-    let mut session = ssh2::Session::new().unwrap();
+    let mut session = Session::new().unwrap();
     let tcp = TcpStream::connect(socket).unwrap();
     session.set_tcp_stream(tcp);
     session.handshake().unwrap();
