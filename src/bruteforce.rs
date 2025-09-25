@@ -227,9 +227,9 @@ pub fn bruteforce(
                 }
 
                 // Print progress occasionally
-                if config.verbose && attempts.is_multiple_of(1_000_000) {
-                    println!("Thread {} has tried {} passwords", thread_id, attempts);
-                }
+                // if config.verbose && attempts.is_multiple_of(1_000_000) {
+                //     println!("Thread {} has tried {} passwords", thread_id, attempts);
+                // }
             }
         });
     }
