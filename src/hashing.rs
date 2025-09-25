@@ -1,19 +1,21 @@
-/*
-*   This file contains available hashing algorthms.
-*   Include or implement new algorithms here. Make sure to add the hash function to the 'get_algorithm' match
+/*  Ripsaw
 *
+*   This file contains available hashing algorthms.
+*   Include or implement new algorithms here. Make sure to add the hash function to the 'get_algorithm' match and
+*   the Algorithms constant array. Might need to come up with a new way to implement get_algorithm to fit other
+*   algorithm implementations; else re-write those implementations to fit this design.
+*   The algorithms already implemented are from the RustCrypto crate.
 *
 */
-
 
 use ascon_hash::AsconHash;
 use belt_hash::BeltHash;
 use blake2::{Blake2b512, Blake2s256};
 use fsb::{Fsb160, Fsb224, Fsb256};
-use gost94::{Gost94CryptoPro, Digest};
+use gost94::{Digest, Gost94CryptoPro};
 use groestl::{Groestl224, Groestl256};
 use jh::{Jh224, Jh256, Jh384, Jh512};
-// use k12::KangarooTwelve; -- missing need input integer 
+// use k12::KangarooTwelve; -- missing need input integer
 use md2::Md2;
 use md4::Md4;
 use md5::compute;
@@ -28,7 +30,7 @@ use sm3::Sm3;
 use streebog::{Streebog256, Streebog512};
 use tiger::Tiger;
 use whirlpool::Whirlpool;
-use yescrypt::yescrypt;
+//use yescrypt::yescrypt;
 
 pub const ALGORITHMS: [&str; 31] = [
     "ascon",
@@ -227,7 +229,6 @@ fn hash_ripemd320(input: &str) -> String {
     format!("{:x}", hasher.finalize())
 }
 
-
 fn hash_sha1(input: &str) -> String {
     let mut hasher = Sha1::new();
     hasher.update(input.as_bytes());
@@ -302,7 +303,7 @@ fn hash_whirlpool(input: &str) -> String {
 
 // fn hash_yescrypt(input: &str) -> String {
 //     // Input will be the next word in the wordlist.
-//     // -- We need to get the parameters and salt. 
+//     // -- We need to get the parameters and salt.
 //     // Remember... simpliest solution is likely the greatest solution
 //     let salt = b"salt";
 //     let params = b"params";

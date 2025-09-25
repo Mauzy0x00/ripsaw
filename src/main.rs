@@ -8,26 +8,25 @@
 *
 */
 
-/* 
-TODO: 
+/*
+TODO:
 1.  Add a function to measure time and try to deterine the amount of threads that would be most
-    efficient for the file size. Is mutlithreading more effiecent? Fuck I hope so it took a long time. 
+    efficient for the file size. Is mutlithreading more effiecent? Fuck I hope so it took a long time.
 2. Bruteforcing
-    Work out issues with generation and threadpooling 
-3. Functionality to determine which algorithm was used to generate the given hash 
-4. Functionality for Salt and Pepper
+    Work out issues with generation and threadpooling
+3. Functionality to determine which algorithm was used to generate the given hash
+4. Functionality for and Pepper
 5. FASTER FASTER FASTER
     - GPU Compute
     - Pre-allocated buffers
     - SIMD-friendly operations
 */
 
-
 // IO
-use std::fs::File;
+use std::fs::{self, File};
 use std::path::PathBuf;
 
-use clap::{Command, Parser};
+use clap::Parser;
 use colored::Colorize;
 
 // use std::time::Duration;
@@ -39,27 +38,26 @@ use log::{info, warn};
 /// Local Includes
 // Register local modules
 mod arg_parser;
-mod library;
-mod hashing;
 mod bruteforce;
 mod dictionary_attack;
+mod hashing;
+mod library;
+mod tests;
 mod ssh;
 
 // import functions from local modules
 use arg_parser::{Args, Commands};
-use library::Config;
-use hashing::get_algorithm;
 use bruteforce::bruteforce;
-use dictionary_attack::{crack_small_wordlist, crack_big_wordlist};
+use dictionary_attack::{crack_big_wordlist, crack_small_wordlist};
+use hashing::get_algorithm;
+use library::Config;
 
 fn main() -> Result<()> {
-    
     initialize();
 
     let args = Args::parse();
 
     match args.command {
-
         Some(Commands::Wordlist {
             cyphertext_path,
             wordlist_path,
@@ -68,25 +66,27 @@ fn main() -> Result<()> {
             thread_count,
             verbose,
         }) => {
-
             let config = Config {
-                salt_present: !salt.is_empty(), // I think this is right. might be backwards
+                salt_present: !salt.is_empty(),
                 verbose,
             };
-            
-            let cyphertext = std::fs::read_to_string(&cyphertext_path)?
-                .to_lowercase();
+
+            let cyphertext = std::fs::read_to_string(&cyphertext_path)?.to_lowercase();
 
             if let Some(algorithm_function) = get_algorithm(&algorithm) {
-                
-                process_wordlist(salt, cyphertext, &wordlist_path, algorithm_function, thread_count, config)?;
-
+                process_wordlist(
+                    salt,
+                    cyphertext,
+                    &wordlist_path,
+                    algorithm_function,
+                    thread_count,
+                    config,
+                )?;
             } else {
                 eprintln!("Sorry! Passed hashing algorithm ({algorithm}) has not been implemented")
             }
         }
 
-        
         Some(Commands::Bruteforce {
             cyphertext_path,
             thread_count,
@@ -95,18 +95,55 @@ fn main() -> Result<()> {
             salt,
             verbose,
         }) => {
-
             let config = Config {
-                salt_present: !salt.is_empty(), // I think this is right. might be backwards
+                salt_present: !salt.is_empty(),
                 verbose,
             };
 
-            let cyphertext = std::fs::read_to_string(&cyphertext_path)?
-                .to_lowercase();
+            let cyphertext = std::fs::read_to_string(&cyphertext_path)?.to_lowercase();
             if let Some(algorithm_function) = get_algorithm(&algorithm) {
-
-                bruteforce(salt, cyphertext, min_length, thread_count, algorithm_function, config);
-
+                bruteforce(
+                    salt,
+                    cyphertext,
+                    min_length,
+                    thread_count,
+                    algorithm_function,
+                    config,
+                );
+            } else {
+                eprintln!("Sorry! Passed hashing algorithm ({algorithm}) has not been implemented")
+            }
+        }
+        Some(Commands::Generate {
+            plaintext,
+            algorithm,
+            output_path,
+        }) => {
+            if let Some(algorithm_function) = get_algorithm(&algorithm) {
+                let cypher_text = algorithm_function("plaintext");
+                match output_path {
+                    Some(o) => {
+                        if fs::exists(&o)? {
+                            eprintln!("File already exists.");
+                        } else {
+                            fs::write(&o, cypher_text)?;
+                            println!(
+                                "Hashed plaintext {} with algorithm {}. Saved to file {}.",
+                                plaintext,
+                                algorithm,
+                                o.to_str().expect(
+                                    "in main, commands::generate: Path is empty??? this SHOULD NOT HAppen. Call the police!!"
+                                )
+                            );
+                        }
+                    }
+                    None => {
+                        println!(
+                            "Hashed plaintext {} with algorithm {}:\n{}\n",
+                            plaintext, algorithm, cypher_text
+                        );
+                    }
+                }
             } else {
                 eprintln!("Sorry! Passed hashing algorithm ({algorithm}) has not been implemented")
             }
@@ -146,6 +183,7 @@ fn main() -> Result<()> {
 } // end main
 
 
+/// Initializes logging, and prints the banner
 fn initialize() {
     env_logger::init();
     info!("Starting log...");
@@ -168,16 +206,17 @@ fn initialize() {
     println!("{banner}\n");
 }
 
-
+/// Will open the passed path buffer, calculate the size of the passed file and determine which cracking
+/// method is best suited for its size. This will then call either 'crack_big_wordlist' (>=2GB) or
+/// use 'crack_small_wordlist'.
 fn process_wordlist(
-    salt: String, 
-    cyphertext: String, 
-    wordlist_path: &PathBuf, 
-    algorithm: fn(&str) -> String, 
-    thread_count: u8, 
+    salt: String,
+    cyphertext: String,
+    wordlist_path: &PathBuf,
+    algorithm: fn(&str) -> String,
+    thread_count: u8,
     config: Config,
 ) -> Result<()> {
-
     // Open passed wordlist file
     // Open the path in read-only mode, returns `io::Result<File>`
     let wordlist_file = match File::open(wordlist_path) {
@@ -191,19 +230,37 @@ fn process_wordlist(
 
     // If the wordlist is larger than 2GB
     if file_size >= 2_000_000 {
-        let cracked = crack_big_wordlist(salt, cyphertext, wordlist_file, file_size, thread_count, algorithm, config);
+        let cracked = crack_big_wordlist(
+            &salt,
+            &cyphertext,
+            wordlist_file,
+            file_size,
+            thread_count,
+            algorithm,
+            config,
+        );
 
         if cracked {
-            println!("Password match was FOUND in the wordlist {}", wordlist_path.display());
+            println!(
+                "Password match was FOUND in the wordlist {}",
+                wordlist_path.display()
+            );
         } else {
-            println!("Password match was NOT FOUND in the wordlist {}", wordlist_path.display());
+            println!(
+                "Password match was NOT FOUND in the wordlist {}",
+                wordlist_path.display()
+            );
         }
-
     } else {
-        let cracked = match crack_small_wordlist(salt, &cyphertext, wordlist_path, algorithm, config) {
-            Err(why) => panic!("Error cracking wordlist {}: {}", wordlist_path.display(), why),
-            Ok(cracked) => cracked,
-        };
+        let cracked =
+            match crack_small_wordlist(&salt, &cyphertext, wordlist_path, algorithm, config) {
+                Err(why) => panic!(
+                    "Error cracking wordlist {}: {}",
+                    wordlist_path.display(),
+                    why
+                ),
+                Ok(cracked) => cracked,
+            };
 
         if cracked {
             println!("Successfully cracked the hash!");

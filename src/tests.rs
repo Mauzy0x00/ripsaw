@@ -1,5 +1,13 @@
-#[test]
+/*  Ripsaw
+*
+*   Tests are implemented here. Nothing here yet.
+*
+*
+*/
 
-fn check_answer_validity() {
-    assert_eq!(answer(), 42);
+mod test {
+    #[test]
+    fn first_test() {
+        todo!();
+    }
 }
