@@ -3,6 +3,7 @@ use std::net::TcpStream;
 use std::net::{IpAddr, SocketAddr};
 use std::path::PathBuf;
 use std::result::Result;
+use ssh2;
 
 use crate::library;
 
@@ -31,6 +32,7 @@ fn ssh_socket(addr: &str, port: u16) -> ssh2::Session {
     let mut session = ssh2::Session::new().unwrap();
     let tcp = TcpStream::connect(socket).unwrap();
     session.set_tcp_stream(tcp);
+    session.handshake().unwrap();
     session
 }
 
@@ -71,6 +73,9 @@ pub fn attack(
                     }
                     SessionError::Other(err) => {
                         // other error
+
+                        // TODO:
+                        // handle  Error { code: Session(-5), msg: "Unable to exchange encryption keys" }
                         eprintln!("Unknown error: {}", err);
                     }
                 }
