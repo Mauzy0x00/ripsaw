@@ -69,7 +69,7 @@ fn main() -> Result<()> {
         }) => {
 
             let config = Config {
-                salt_present: !salt.is_empty(), // I think this is right. might be backwards
+                salt_present: !salt.is_empty(),
                 verbose,
             };
             
@@ -96,7 +96,7 @@ fn main() -> Result<()> {
         }) => {
 
             let config = Config {
-                salt_present: !salt.is_empty(), // I think this is right. might be backwards
+                salt_present: !salt.is_empty(),
                 verbose,
             };
 
