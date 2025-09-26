@@ -176,7 +176,7 @@ pub fn crack_big_wordlist(
 
             // Unlock the file and iterate over vector
             drop(wordlist_file); // Drop is now the owner and its scope has ended. So Is this not neccessary and the lock is freed after the seek and read?
-          
+
             if crack_vector(lines, cyphertext, hash_algorithm, &cracked) {
                 println!("[✓] cracked!");
                 println!("\n[-] Cleaning up remaining threads...");

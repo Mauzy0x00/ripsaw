@@ -42,8 +42,8 @@ mod bruteforce;
 mod dictionary_attack;
 mod hashing;
 mod library;
-mod tests;
 mod ssh;
+mod tests;
 
 // import functions from local modules
 use arg_parser::{Args, Commands};
@@ -52,7 +52,8 @@ use dictionary_attack::{crack_big_wordlist, crack_small_wordlist};
 use hashing::get_algorithm;
 use library::Config;
 
-fn main() -> Result<()> {
+#[tokio::main]
+async fn main() -> Result<()> {
     initialize();
 
     let args = Args::parse();
@@ -158,13 +159,12 @@ fn main() -> Result<()> {
             salt,
             verbose,
         }) => {
-
             let config = Config {
                 salt_present: !salt.is_empty(), // I think this is right. might be backwards
                 verbose,
             };
 
-            ssh::attack(server, port, user, wordlist_path, config);
+            ssh::attack(server, port, user, wordlist_path, config).await?;
         }
 
         None => {}
@@ -181,7 +181,6 @@ fn main() -> Result<()> {
 
     Ok(())
 } // end main
-
 
 /// Initializes logging, and prints the banner
 fn initialize() {

@@ -6,7 +6,6 @@
 *             Some of the arguments for each mode are optional; Defined with 'default_value = "foobar"'
 */
 
-
 use clap::{Parser, Subcommand};
 use std::{net::Ipv4Addr, path::PathBuf};
 
@@ -103,7 +102,11 @@ pub enum Commands {
         #[arg(short = 'w', long = "wordlist", help = "Path to the wordlist.")]
         wordlist_path: PathBuf,
 
-        #[arg(short = 's', long = "salt", help = "String to prefix each item in the given wordlist.")]
+        #[arg(
+            short = 's',
+            long = "salt",
+            help = "String to prefix each item in the given wordlist."
+        )]
         salt: String,
 
         #[arg(short = 't', long = "threads", help = "Number of threads.")]
