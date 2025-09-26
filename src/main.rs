@@ -38,6 +38,7 @@ use log::{info, warn};
 /// Local Includes
 // Register local modules
 mod arg_parser;
+mod benchmark;
 mod bruteforce;
 mod dictionary_attack;
 mod hashing;
@@ -52,8 +53,7 @@ use dictionary_attack::{crack_big_wordlist, crack_small_wordlist};
 use hashing::get_algorithm;
 use library::Config;
 
-#[tokio::main]
-async fn main() -> Result<()> {
+fn main() -> Result<()> {
     initialize();
 
     let args = Args::parse();
@@ -164,7 +164,7 @@ async fn main() -> Result<()> {
                 verbose,
             };
 
-            ssh::attack(server, port, user, wordlist_path, config).await?;
+            ssh::attack(server, port, user, wordlist_path, config);
         }
 
         None => {}
