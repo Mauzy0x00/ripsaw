@@ -43,6 +43,7 @@ mod dictionary_attack;
 mod hashing;
 mod library;
 mod tests;
+mod ssh;
 
 // import functions from local modules
 use arg_parser::{Args, Commands};
@@ -146,6 +147,24 @@ fn main() -> Result<()> {
             } else {
                 eprintln!("Sorry! Passed hashing algorithm ({algorithm}) has not been implemented")
             }
+        }
+
+        Some(Commands::Ssh {
+            server,
+            port,
+            wordlist_path,
+            user,
+            thread_count,
+            salt,
+            verbose,
+        }) => {
+
+            let config = Config {
+                salt_present: !salt.is_empty(), // I think this is right. might be backwards
+                verbose,
+            };
+
+            ssh::attack(server, port, user, wordlist_path, config);
         }
 
         None => {}
