@@ -52,7 +52,8 @@ use dictionary_attack::{crack_big_wordlist, crack_small_wordlist};
 use hashing::get_algorithm;
 use library::Config;
 
-fn main() -> Result<()> {
+#[tokio::main]
+async fn main() -> Result<()> {
     initialize();
 
     let args = Args::parse();
@@ -163,7 +164,7 @@ fn main() -> Result<()> {
                 verbose,
             };
 
-            ssh::attack(server, port, user, wordlist_path, config)?;
+            ssh::attack(server, port, user, wordlist_path, config).await?;
         }
 
         None => {}
